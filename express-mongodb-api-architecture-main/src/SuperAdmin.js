@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-
-mongoose.connect('mongodb://127.0.0.1:27017/Osc', {
+const dotenv=require('dotenv') ;
+dotenv.config();
+mongoose.connect(process.env.DEV_DATABASE, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
@@ -14,8 +15,8 @@ async function createSuperAdmin() {
 
     if (!superAdminExists) {
       const superAdminData = {
-        email: 'superadmin@example.com',
-        password: await bcrypt.hash('superadminpassword', 10),
+        email: process.env.ADMIN_EMAIL,
+        password: await bcrypt.hash( process.env.ADMIN_PASSSWORD, 10),
         firstName: 'Super',
         lastName: 'Admin',
         role: 'super admin',

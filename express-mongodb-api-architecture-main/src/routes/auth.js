@@ -46,7 +46,7 @@ router.post('/account/:token/enable', authController.enableAccount);
 
 // GET request - Get current user
 
-router.get('/admin', verifyToken,verifyRole(['super admin']), (req, res) => {
+router.get('/admin', verifyToken,verifyRole(['beekeeper']), (req, res) => {
   res.send('Welcome, super admin!');
 });
 
