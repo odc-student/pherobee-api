@@ -14,10 +14,11 @@ const beekeeperController = require('../controllers/beekeeper_controller');
 
 
 router.get("/beekeepers",beekeeperController.getBeeKeepers)
-router.get("/beekeepers/subowners",beekeeperController.retreiveSubownersByBeekeeper)
-router.post("/create/subowner",beekeeperController.addSubowner)
-router.post("/create/farm",beekeeperController.createFarm)
-router.post("/associate/beehivetofarm",beekeeperController.assignBeehiveToFarm)
+router.get("/beekeepers/subownersbybeekeeper",beekeeperController.retreiveSubownersByBeekeeper)
+router.get("/beekeepers/beehivebyfarm",beekeeperController.retreiveHivesByFarm)
+router.post("/beekeepers/create/subowner",beekeeperController.addSubowner)
+router.post("/beekeepers/create/farm",beekeeperController.createFarm)
+router.post("/beekeepers/associate/beehivetofarm",beekeeperController.assignBeehiveToFarm)
 
 
 module.exports = router;
