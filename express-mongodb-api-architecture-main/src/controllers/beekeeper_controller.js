@@ -87,8 +87,6 @@ const assignBeehiveToFarm = async (req, res) => {
     // Update the Beekeeper's subowners array
     // const beekeeper = await Beekeeper.findById(beekeeperId);
     const farm = await Farm.findById(farmId);
-    const bees = await Beehive.find()
-    console.log(bees)
     const beehive = await Beehive.findById(beehiveId);
     // if (!beekeeper) {
     //   return res.status(404).json({message: 'Beekeeper not found'});
@@ -111,7 +109,33 @@ const assignBeehiveToFarm = async (req, res) => {
   }
 }
 
+const retreiveSubownersByBeekeeper = async (req, res) => {
+  try {
+    const {beekeeperId} = req.body;
+
+
+    // Update the Beekeeper's subowners array
+    // const beekeeper = await Beekeeper.findById(beekeeperId);
+    const beekeeper = await Beekeeper.findById(beekeeperId);
+    if (!beekeeper) {
+      return res.status(404).json({message: 'Beekeeper not found'});
+    }
+    let result = []
+    for(let i =0; i<beekeeper.subowners.length ;i++){
+      const subowner = await Subowner.findById(beekeeper.subowners[i])
+      result.push(subowner)
+
+    }
+    res.status(201).json(result);
+  } catch (error) {
+    res.status(500).json({message: error.message});
+  }
+}
+
+
+
 module.exports = {
+  retreiveSubownersByBeekeeper,
   assignBeehiveToFarm,
   addSubowner,
   getBeeKeepers,
