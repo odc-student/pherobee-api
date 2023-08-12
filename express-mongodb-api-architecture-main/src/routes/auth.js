@@ -6,12 +6,13 @@ const router = require('express').Router();
 
 // Middlewares
 const verifyToken = require('../middlewares/verify-token');
-const verifyRole = require('../middlewares/verify-role'); 
+const verifyRole = require('../middlewares/verify-role');
 
 const { fileUpload } = require('../middlewares/multer');
 
 // controllers
 const authController = require('../controllers/AuthController');
+const beekeeperController = require("../controllers/beekeeper_controller");
 
 /* -------------------------------------------------------------------------- */
 /*                                 Auth Route                                 */
@@ -69,5 +70,7 @@ router.get('/users', verifyToken, authController.getAllUsers);
 
 // DELETE request - delete user
 router.delete('/users/:id', verifyToken, authController.deleteUser);
+
+
 
 module.exports = router;

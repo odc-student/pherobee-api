@@ -7,6 +7,7 @@ const beekeeperSchema = new mongoose.Schema({
   password: String, // Hashed password
   forgetPasswordToken: String,
   hives: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Hive' }],
+  farms: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Farms' }],
   subowners: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Subowner' }] // References to Subowner documents
 });
 

@@ -42,9 +42,9 @@ var smtpTransport = nodemailer.createTransport({
     pass: AUTH_PASSWORD,
   },
   tls:{
-    rejectUnauthorized:false, // disable certificate vercation 
+    rejectUnauthorized:false, // disable certificate vercation
   }
-  
+
 });
 
 /* -------------------------------------------------------------------------- */
@@ -482,7 +482,7 @@ const enableAccount = async (req, res) => {
 // export module
 module.exports = {
   checkExistEmail,
-  
+
   signIn,
   forgotPassword,
   resetPassword,

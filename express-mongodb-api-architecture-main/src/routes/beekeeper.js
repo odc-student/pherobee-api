@@ -15,6 +15,7 @@ const beekeeperController = require('../controllers/beekeeper_controller');
 
 router.get("/beekeepers",beekeeperController.getBeeKeepers)
 router.post("/create/subowner",beekeeperController.addSubowner)
+router.post("/create/farm",beekeeperController.createFarm)
 
 
 module.exports = router;
