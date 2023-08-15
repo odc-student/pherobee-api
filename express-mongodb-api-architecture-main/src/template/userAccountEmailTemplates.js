@@ -1,41 +1,44 @@
 /**
  * Confirm user email to activate account to access to the app
- * @param {String} fullName User full name
+ * @param {String}  firstName,
+ @param {String} lastName,
  * @param {String} API_ENDPOINT Depend on the app running localy or server
  * @param {String} confirmationCode Generated unique code
  */
-const singUpConfirmationEmailTemplate = (
-  fullName,
-  API_ENDPOINT,
-  email,
-  confirmationCode,
-) => `
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta http-equiv="Content-Type" content="text/html;utf-8" />
-    <title>
-      Confirmation de votre inscription
-    </title>
-  </head>
 
-  <body style="max-width: 400px">
-    <div>
-      <p>Bonjour ${fullName},</p>
-      <p>
-        Nous vous remercions pour votre inscription.
-      </p>
-      <p>Votre nom d'utilisateur est : ${email}</p>
-      <p>Veuillez suivre ce lien pour activer votre compte :</p>
-      <a href="${API_ENDPOINT}/account/${confirmationCode}/enable"
-        >Je confirme que je souhaite activer mon compte
-      </a>
-      <p>Cordialement.</p>
-    </div>
-  </body>
-</html>
 
-`;
+ 
+ const singUpConfirmationEmailTemplate = (firstName, lastName, email, loginLink, password) => `
+ <!DOCTYPE html>
+ <html>
+   <head>
+     <meta http-equiv="Content-Type" content="text/html;utf-8" />
+     <title>
+       Confirmation de votre inscription
+     </title>
+   </head>
+ 
+   <body style="max-width: 400px">
+     <div>
+       <p>Bonjour ${firstName} ${lastName},</p>
+       <p>
+         Nous vous remercions pour votre inscription.
+       </p>
+       <p>Votre Email est : ${email}</p>
+       <p>Votre mot de passe est : ${password}</p>
+       <p>Connectez-vous à votre compte sur notre site :</p>
+       <p><a href="${loginLink}">Cliquez ici pour vous connecter</a></p>
+       <p>Cordialement.</p>
+     </div>
+   </body>
+ </html>
+ `;
+
+ 
+
+
+module.exports = singUpConfirmationEmailTemplate;
+
 
 /**
  * Send Email to reset password

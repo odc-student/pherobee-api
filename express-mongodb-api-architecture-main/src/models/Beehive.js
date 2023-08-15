@@ -10,14 +10,15 @@ const beehiveSchema = new Schema({
   serialNumber: {
     type: String,
     required: true,
-    unique: true,
+    // Remove the unique constraint
+    // unique: true,
   },
   beekeeper: {
     type: Schema.Types.ObjectId,
-    ref: 'User', // Reference to the User model
-    required: true,
+    ref: 'Beekeeper',
   },
 });
+
 
 const Beehive = mongoose.model('Beehive', beehiveSchema);
 
