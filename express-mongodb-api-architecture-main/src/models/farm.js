@@ -1,10 +1,11 @@
 const mongoose = require('mongoose');
 
-const farmSchema = new mongoose.Schema({
+const farm = new mongoose.Schema({
+  name:String,
   location: String,
   hives: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Hive' }]
 });
 
-const Farm = mongoose.model('Farm', farmSchema);
+const Farm = mongoose.model('Farm', farm);
 
 module.exports = Farm;

@@ -1,4 +1,4 @@
-/* -------------------------------------------------------------------------- */
+/* ---------------------------------------------------  ----------------------- */
 /*                                Dependencies                                */
 /* -------------------------------------------------------------------------- */
 const mongoose = require('mongoose');
@@ -15,7 +15,7 @@ const UserSchema = new Schema({
   lastName: String,
   photo: String,
   role: { type: String, enum: ['super admin', 'beekeeper'], default: 'beekeeper' }
-  
+
 });
 
 /* -------------------------------------------------------------------------- */
@@ -59,4 +59,4 @@ UserSchema.methods.comparePassword = function (password) {
 };
 
 // export User Schema
-module.exports = mongoose.model('User', UserSchema);
+  module.exports = mongoose.model('User', UserSchema);

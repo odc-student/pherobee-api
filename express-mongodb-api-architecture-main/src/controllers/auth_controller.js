@@ -8,7 +8,7 @@ const async = require('async');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt-nodejs');
 // Models
-const User = require('../models/UserModel');
+const User = require('../models/user');
 
 // Token
 const jwt = require('jsonwebtoken');
@@ -94,8 +94,10 @@ const signIn = async (req, res) => {
     }
 
     const isPasswordMatch = req.body.password === foundUser.password
-    // bcrypt.compareSync(req.body.password, foundUser.password);
 
+      // const isPass = bcrypt.compareSync(req.body.password, foundUser.password);
+      // console.log("test")
+      // console.log(isPass)
     if (isPasswordMatch) {
       const token = jwt.sign({ _id: foundUser._id ,role:foundUser.role }, process.env.SECRET, {
         expiresIn: '1w', // Use a human-readable duration, e.g., '1w' for 1 week

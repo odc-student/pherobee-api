@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require("bcrypt-nodejs");
 
-const beekeeperSchema = new mongoose.Schema({
+const beekeeper = new mongoose.Schema({
   username: String,
   email: String,
   password: String, // Hashed password
@@ -12,7 +12,7 @@ const beekeeperSchema = new mongoose.Schema({
 });
 
 
-beekeeperSchema.pre('save', function (next) {
+beekeeper.pre('save', function (next) {
     let beekeeper = this;
     if (this.isModified('password' || this.isNew)) {
         // generate 10 length random characters
@@ -40,7 +40,7 @@ beekeeperSchema.pre('save', function (next) {
  * @param {String} password
  * @returns {boolean}
  */
-beekeeperSchema.methods.comparePassword = function (password) {
+beekeeper.methods.comparePassword = function (password) {
     let beekeeper = this; // this reference the user itself
     return bcrypt.compareSync(password, beekeeper.password);
 };
@@ -48,7 +48,7 @@ beekeeperSchema.methods.comparePassword = function (password) {
 
 
 
-const Beekeeper = mongoose.model('Beekeeper', beekeeperSchema);
+const Beekeeper = mongoose.model('Beekeeper', beekeeper);
 
 
 module.exports = Beekeeper;
