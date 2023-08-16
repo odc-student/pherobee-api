@@ -18,8 +18,7 @@ router.get("/beekeepers/:beekeeperid/subowners",verifyToken,verifyRole(["beekeep
 router.get("/beekeepers/:farmid/beehive",verifyToken,verifyRole(["beekeeper"]),beekeeperController.retreiveHivesByFarm)
 router.post("/beekeepers/create/subowner",verifyToken,verifyRole(["beekeeper"]),beekeeperController.addSubowner)
 router.post("/beekeepers/create/farm",verifyToken,verifyRole(["beekeeper"]),beekeeperController.createFarm)
-// router.post("/beekeepers/associate/beehive_to_farm",verifyToken,verifyRole(["beekeeper"]),beekeeperController.assignBeehiveToFarm)
-// router.post("/beekeepers/associate/beehive_to_beekeeper",verifyToken,verifyRole(["beekeeper"]),beekeeperController.assignBeehiveToBeekeeper)
+router.post("/beekeepers/associate/beehive_to_farm",verifyToken,verifyRole(["beekeeper"]),beekeeperController.assignBeehiveToFarm)
 
 
 module.exports = router;

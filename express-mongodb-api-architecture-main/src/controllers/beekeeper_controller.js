@@ -7,18 +7,18 @@ const bcrypt = require('bcrypt');
 
 const getBeeKeepers = async (req, res) => {
   try {
-    const beekeepers = await Beekeeper.find();
-    let result = []
-    for (let i = 0; i < beekeepers.length; i++) {
+    const beekeepers = await Beekeeper.find().populate([{
+      path: "subowners",
+      strictPopulate: false,
+      select: "-password"
+    },
+      {path: "hives", strictPopulate: false},
+      {path: "farms", strictPopulate: false},
 
-      // console.log(beekeepers[i])
-      const {password, ...otherData}  = beekeepers[i]._doc
-      // console.log(otherData)
-      result.push(otherData)
+    ]).select("-password");
 
-    }
 
-    res.json(result);
+    res.json(beekeepers);
   } catch (error) {
     res.status(500).json({message: error.message});
   }
@@ -27,11 +27,10 @@ const getBeeKeepers = async (req, res) => {
 const createFarm = async (req, res) => {
   try {
     const beekeeperId = req.decoded._id
-    const { name,location  } = req.body;
+    const {name, location} = req.body;
     // Create a new Subowner document
     const farm = new Farm({
-      name,
-      location,
+      name, location,
     });
 
     // Update the Beekeeper's subowners array
@@ -57,7 +56,7 @@ const createFarm = async (req, res) => {
 const addSubowner = async (req, res) => {
   try {
     const beekeeperId = req.decoded._id
-    let { email, password   } = req.body;
+    let {email, password} = req.body;
     // Update the Beekeeper's subowners array
     const beekeeper = await Beekeeper.findById(beekeeperId);
     if (!beekeeper) {
@@ -69,8 +68,7 @@ const addSubowner = async (req, res) => {
     // Create a new Subowner document
 
     const subowner = new Subowner({
-      email,
-      password:hash_pass,
+      email, password: hash_pass,
 
     });
 
@@ -83,27 +81,17 @@ const addSubowner = async (req, res) => {
     beekeeper.subowners.push(subowner);
     await beekeeper.save();
 
-// Create a response object without the password field
-    const responseSubowner = {
-      _id: subowner._id,
-      email: subowner.email,
-      // Other fields you want to include in the response
-    };
-
-
-    res.status(201).json(responseSubowner);
+    res.status(201).json(beekeeper);
   } catch (error) {
     res.status(500).json({message: error.message});
   }
 }
 
 
-
-
 const assignBeehiveToFarm = async (req, res) => {
   try {
-    const beekeeperId = req.decoded._id
-    const {beehiveId, farmId} = req.body;
+    // const beekeeperId = req.decoded._id
+    const {beehiveId, farmId, beekeeperId} = req.body;
 
 
     // Update the Beekeeper's subowners array
@@ -116,17 +104,18 @@ const assignBeehiveToFarm = async (req, res) => {
     if (!beehive) {
       return res.status(404).json({message: 'Beehive not found'});
     }
-    if (beekeeper.hives.includes(beehive)) {
-      return res.status(404).json({message: 'Beekeeper has no access to the beehive'});
+    console.log(beekeeper.hives)
+    const hasAccess = beekeeper.hives.some(hive => hive.equals(beehiveId));
+    if (!hasAccess) {
+      return res.status(403).json({message: 'Beekeeper has no access to the beehive'});
     }
 
     if (!farm) {
       return res.status(404).json({message: 'Farm not found'});
     }
 
-    farm.hives.push(beehive);
-    await farm.save();
-
+    // farm.hives.push(beehive);
+    // await farm.save();
 
 
     res.status(201).json(farm);
@@ -135,35 +124,6 @@ const assignBeehiveToFarm = async (req, res) => {
   }
 }
 
-
-const assignBeehiveToBeekeeper = async (req, res) => {
-  try {
-    const beekeeperId = req.decoded._id
-    const {beehiveId} = req.body;
-
-    const beekeeper = await Beekeeper.findById(beekeeperId);
-
-    if (!beekeeper) {
-      return res.status(404).json({message: 'Beekeeper not found'});
-    }
-    const beehive = await Beehive.findById(beehiveId);
-    // if (!beekeeper) {
-    //   return res.status(404).json({message: 'Beekeeper not found'});
-    // }
-    if (!beehive) {
-      return res.status(404).json({message: 'Beehive not found'});
-    }
-
-    beekeeper.hives.push(beehive);
-    await beekeeper.save();
-
-
-
-    res.status(201).json(beekeeper);
-  } catch (error) {
-    res.status(500).json({message: error.message});
-  }
-}
 
 
 const retreiveSubownersByBeekeeper = async (req, res) => {
@@ -178,14 +138,9 @@ const retreiveSubownersByBeekeeper = async (req, res) => {
       return res.status(404).json({message: 'Beekeeper not found'});
     }
     let result = []
-    for(let i =0; i<beekeeper.subowners.length ;i++){
-      const subowner = await Subowner.findById(beekeeper.subowners[i])
-      const dataRetreived={
-        _id: subowner._id,
-        email: subowner.email,
-        FarmAccess: subowner.FarmAccess,
-      }
-      result.push(dataRetreived)
+    for (let i = 0; i < beekeeper.subowners.length; i++) {
+      const subowner = await Subowner.findById(beekeeper.subowners[i]).select("-password")
+      result.push(subowner)
 
     }
     res.status(201).json(result);
@@ -204,7 +159,7 @@ const retreiveHivesByFarm = async (req, res) => {
       return res.status(404).json({message: 'Farm not found'});
     }
     let result = []
-    for(let i =0; i<farm.hives.length ;i++){
+    for (let i = 0; i < farm.hives.length; i++) {
       const hive = await Beehive.findById(farm.hives[i])
       result.push(hive)
 
@@ -216,14 +171,12 @@ const retreiveHivesByFarm = async (req, res) => {
 }
 
 
-
-
 module.exports = {
   retreiveHivesByFarm,
   retreiveSubownersByBeekeeper,
   assignBeehiveToFarm,
   addSubowner,
   getBeeKeepers,
-  createFarm,
-  assignBeehiveToBeekeeper
+  createFarm
+
 }

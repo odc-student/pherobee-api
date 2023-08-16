@@ -6,44 +6,10 @@ const beekeeper = new mongoose.Schema({
   email: String,
   password: String, // Hashed password
   forgetPasswordToken: String,
-  hives: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Hive' }],
-  farms: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Farms' }],
+  hives: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Beehive' }],
+  farms: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Farm' }],
   subowners: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Subowner' }] // References to Subowner documents
 });
-
-
-beekeeper.pre('save', function (next) {
-    let beekeeper = this;
-    if (this.isModified('password' || this.isNew)) {
-        // generate 10 length random characters
-        bcrypt.genSalt(10, function (err, salt) {
-            if (err) {
-                return next(err);
-            }
-            // mix the 10 length random characters with user password => output the hash
-            bcrypt.hash(beekeeper.password, salt, null, function (err, hash) {
-                if (err) {
-                    return next(err);
-                }
-                beekeeper.password = hash;
-                // we are done with the operation so let's move on
-                next();
-            });
-        });
-    } else {
-        return next();
-    }
-});
-
-/**
- * this function to compare password
- * @param {String} password
- * @returns {boolean}
- */
-beekeeper.methods.comparePassword = function (password) {
-    let beekeeper = this; // this reference the user itself
-    return bcrypt.compareSync(password, beekeeper.password);
-};
 
 
 
