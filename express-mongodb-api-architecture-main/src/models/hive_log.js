@@ -1,12 +1,26 @@
 const mongoose = require('mongoose');
+const { Schema } = mongoose;
 
-const hive_log = new mongoose.Schema({
-  temperature: Number,
-  humidity: Number,
-  hive: { type: mongoose.Schema.Types.ObjectId, ref: 'Hive' },
-  timestamp: { type: Date, default: Date.now }
+const hiveLogSchema = new Schema({
+  temperature: {
+    type: Number,
+    required: true,
+  },
+  humidity: {
+    type: Number,
+    required: true,
+  },
+  beehive: {
+    type: Schema.Types.ObjectId,
+    ref: 'Beehive',
+    required: true,
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-const HiveLog = mongoose.model('HiveLog', hive_log);
+module.exports = mongoose.model('HiveLog', hiveLogSchema);
 
-module.exports = HiveLog ;
+

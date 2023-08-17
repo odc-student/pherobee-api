@@ -6,9 +6,14 @@ const { default: mongoose } = require('mongoose');
 const nodemailer = require('nodemailer');
 const async = require('async');
 const crypto = require('crypto');
-const bcrypt = require('bcrypt-nodejs');
+const bcrypt = require('bcrypt');
 // Models
 const User = require('../models/user');
+const Beekeeper = require('../models/beekeeper');
+const Beehive = require('../models/beehive');
+
+const verifyToken = require('../middlewares/verify-token');
+const verifyRole = require('../middlewares/verify-role');
 
 // Token
 const jwt = require('jsonwebtoken');
@@ -20,6 +25,8 @@ const {
   forgotPasswordEmailTemplate,
   resetPasswordConfirmationEmailTemplate,
 } = require('../template/userAccountEmailTemplates');
+const { captureRejectionSymbol } = require('events');
+
 
 /* -------------------------------------------------------------------------- */
 /*                                   HELPERS                                  */
@@ -55,6 +62,18 @@ var smtpTransport = nodemailer.createTransport({
  * @param {Object} req - The request object
  * @param {Object} res - The response object
  */
+const comparePasswords = (password, hash) => {
+  return new Promise((resolve, reject) => {
+    bcrypt.compare(password, hash, (err, result) => {
+      if (err) {
+        reject(err);
+      } else {
+        resolve(result);
+      }
+    });
+  });
+};
+
 const checkExistEmail = async (req, res) => {
   let foundUser = await User.findOne({ email: req.body.email });
   // if email doesn't exist
@@ -84,37 +103,61 @@ const checkExistEmail = async (req, res) => {
  */
 const signIn = async (req, res) => {
   try {
-    const foundUser = await User.findOne({ email: req.body.email });
+    const { email, password } = req.body;
+    console.log('Login request received:', email);
 
+    // Check if the email exists in the User model
+    const foundUser = await User.findOne({ email });
+
+    // If not found in User model, check the Beekeeper model
     if (!foundUser) {
-      return res.status(403).json({
-        success: false,
-        message: "Échec de l'authentification, utilisateur introuvable",
-      });
-    }
+      const foundBeekeeper = await Beekeeper.findOne({ email });
 
-    const isPasswordMatch = req.body.password === foundUser.password
+      if (!foundBeekeeper) {
+        console.log('User not found:', email);
+        return res.status(403).json({
+          success: false,
+          message: "Échec de l'authentification, utilisateur introuvable",
+        });
+      }
 
-      // const isPass = bcrypt.compareSync(req.body.password, foundUser.password);
-      // console.log("test")
-      // console.log(isPass)
-    if (isPasswordMatch) {
-      const token = jwt.sign({ _id: foundUser._id ,role:foundUser.role }, process.env.SECRET, {
-        expiresIn: '1w', // Use a human-readable duration, e.g., '1w' for 1 week
-      });
+      const isPasswordMatch = bcrypt.compareSync(password, foundBeekeeper.password);
 
-      return res.json({
-        success: true,
-        token: token,
-        user: foundUser,
-      });
+      if (isPasswordMatch) {
+        const token = jwt.sign({ _id: foundBeekeeper._id, role: foundBeekeeper.role }, process.env.SECRET, {
+          expiresIn: '1w',
+        });
+
+        return res.json({
+          success: true,
+          token: token,
+          user: foundBeekeeper,
+        });
+      }
     } else {
-      return res.status(403).json({
-        success: false,
-        message: "Échec de l'authentification, Mot de passe erroné",
-      });
+      const isPasswordMatch = bcrypt.compareSync(password, foundUser.password);
+
+      if (isPasswordMatch) {
+        const token = jwt.sign({ _id: foundUser._id, role: foundUser.role }, process.env.SECRET, {
+          expiresIn: '1w',
+        });
+
+        return res.json({
+          success: true,
+          token: token,
+          user: foundUser,
+        });
+      }
     }
+
+    // Incorrect password or no matching user
+    console.log('Incorrect password or user not found:', email);
+    return res.status(403).json({
+      success: false,
+      message: "Échec de l'authentification, Mot de passe erroné ou utilisateur introuvable",
+    });
   } catch (error) {
+    console.error('Error during login:', error);
     return res.status(500).json({
       success: false,
       message: "Erreur interne du serveur. Veuillez réessayer ultérieurement.",
@@ -481,10 +524,132 @@ const enableAccount = async (req, res) => {
   }
 };
 
-// export module
+const createBeekeeperAccount = async (req, res) => {
+  try {
+    const {firstName, lastName, email, password } = req.body;
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const loginLink = `${process.env.API_ENDPOINT}/v1/api/auth/login`;
+
+    const beekeeper = new Beekeeper({
+      firstName,
+      lastName,
+      email,
+      password: hashedPassword,
+      role: 'beekeeper',
+      forgotPasswordToken: '',
+    });
+
+    await beekeeper.save();
+
+    // Send email with credentials
+    const template = singUpConfirmationEmailTemplate(
+      firstName,
+      lastName,
+      email,
+      loginLink,
+      password
+    );
+
+    const data = {
+      from: process.env.SENDER_EMAIL,
+      to: email,
+      subject: 'Beekeeper Account Created',
+      html: template,
+    };
+
+    smtpTransport.sendMail(data, function (err) {
+      if (!err) {
+        res.status(201).json({ message: 'Beekeeper account created successfully.' });
+      } else {
+        console.error('Error sending email:', err);
+        res.status(500).json({ error: 'An error occurred while creating the beekeeper account.' });
+      }
+    });
+  } catch (error) {
+    console.error('Error creating beekeeper account:', error);
+    res.status(500).json({ error: 'An error occurred while creating the beekeeper account.' });
+  }
+};
+
+const assignBeehiveToBeekeeper = async (req, res) => {
+  try {
+    const { beehiveId, beekeeperId } = req.body;
+
+    // Verify role ('super admin')
+    if (!req.decoded || req.decoded.role !== 'super admin') {
+      console.log('Access denied. Insufficient privileges for role:', req.decoded.role);
+      return res.status(403).json({ message: 'Access denied. Insufficient privileges.' });
+    }
+
+    // Find the Beehive and Beekeeper
+    const beehive = await Beehive.findById(beehiveId);
+    const beekeeper = await Beekeeper.findById(beekeeperId);
+
+    if (!beehive || !beekeeper) {
+      console.log('Beehive:', beehive, 'Beekeeper:', beekeeper);
+      return res.status(404).json({ message: 'Beehive or Beekeeper not found.' });
+    }
+
+    // Update Beehive with Beekeeper assignment
+    beehive.beekeeper = beekeeperId;
+    await beehive.save();
+
+    res.status(200).json({ message: 'Beehive assigned to Beekeeper successfully.' });
+  } catch (error) {
+    console.error('Error assigning beehive to beekeeper:', error);
+    res.status(500).json({ message: 'An error occurred while assigning beehive to beekeeper.' });
+  }
+};
+
+
+const createBeehive = async (req, res) => {
+  try {
+    const { status } = req.body;
+
+    if (req.decoded.role !== 'super admin') {
+      console.log('Access denied. Insufficient privileges for role:', req.decoded.role);
+      return res.status(403).json({ message: 'Access denied. Insufficient privileges.' });
+    }
+
+    // Generate a unique serial number
+    const serialNumber = generateUniqueSerialNumber();
+
+    // Create a new Beehive
+    const newBeehive = new Beehive({
+      status,
+      serialNumber,
+    });
+
+    await newBeehive.save();
+
+    return res.status(201).json({ message: 'Beehive created successfully.', beehive: newBeehive });
+  } catch (error) {
+    console.error('Error creating beehive:', error);
+    return res.status(500).json({ message: 'An error occurred while creating beehive.' });
+  }
+};
+
+const generateUniqueSerialNumber = () => {
+  return generateRandomSerialNumber();
+};
+
+const generateRandomSerialNumber = () => {
+  const randomDigits = Math.floor(Math.random() * 1000000);
+  return `BH${randomDigits}`;
+};
+
+
+
+
+
+
+
+
+
+
+
 module.exports = {
   checkExistEmail,
-
   signIn,
   forgotPassword,
   resetPassword,
@@ -494,4 +659,10 @@ module.exports = {
   enableAccount,
   getAllUsers,
   deleteUser,
+  createBeekeeperAccount,
+ assignBeehiveToBeekeeper ,
+ createBeehive,
 };
+
+
+

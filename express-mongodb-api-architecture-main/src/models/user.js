@@ -3,7 +3,7 @@
 /* -------------------------------------------------------------------------- */
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
-const bcrypt = require('bcrypt-nodejs');
+const bcrypt = require('bcrypt');
 
 /* -------------------------------------------------------------------------- */
 /*                                 User Schema                                */
@@ -13,7 +13,6 @@ const UserSchema = new Schema({
   password: { type: String, required: true },
   firstName: String,
   lastName: String,
-  photo: String,
   role: { type: String, enum: ['super admin', 'beekeeper'], default: 'beekeeper' }
 
 });

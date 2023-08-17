@@ -26,11 +26,9 @@ const app = express();
 
 // DATABASE CONNECTION
 mongoose.connect(
-
-  "mongodb://localhost:27017/test",
-  // process.env.NODE_ENV === 'production'
-  //   ? process.env.PROD_DATABASE
-  //   : process.env.DEV_DATABASE,
+  process.env.NODE_ENV === 'production'
+    ? process.env.PROD_DATABASE
+    : process.env.DEV_DATABASE,
   {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -54,10 +52,13 @@ app.use(cors());
 // Require APIs
 const userRoutes = require('./src/routes/auth');
 const beekeeperRoutes = require('./src/routes/beekeeper');
+const hivelogRoutes = require('./src/routes/hive_log');
 
 // local APIs
 app.use('/v1/api', userRoutes);
 app.use('/v1/api', beekeeperRoutes);
+app.use('/V1/api', hivelogRoutes);
+
 
 // API for uploads file (photo, galleries)
 app.get('/uploads/:id', (req, res) => {

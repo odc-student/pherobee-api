@@ -1,11 +1,26 @@
 const mongoose = require('mongoose');
+const {Schema} = mongoose;
 
-const beehive = new mongoose.Schema({
-  serialNumber: String,
-  state: {type: String, enum: ['active', 'inactive']},
-  hiveLog: [{type: mongoose.Schema.Types.ObjectId, ref: 'HiveLog'}]
+const beehiveSchema = new Schema({
+  status: {
+    type: String,
+    enum: ['active', 'inactive', 'under maintenance'],
+    default: 'active',
+  },
+  serialNumber: {
+    type: String,
+    required: true,
+    // Remove the unique constraint
+    // unique: true,
+  },
+  hiveLog: [{type: mongoose.Schema.Types.ObjectId, ref: 'HiveLog'}],
+  beekeeper: {
+    type: Schema.Types.ObjectId,
+    ref: 'Beekeeper',
+  },
 });
 
-const Hive = mongoose.model('Beehive', beehive);
 
-module.exports = Hive;
+const Beehive = mongoose.model('Beehive', beehiveSchema);
+
+module.exports = Beehive;

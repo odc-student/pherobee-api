@@ -12,7 +12,7 @@ const getBeeKeepers = async (req, res) => {
       strictPopulate: false,
       select: "-password"
     },
-      {path: "hives", strictPopulate: false},
+      {path: "beehives", strictPopulate: false},
       {path: "farms", strictPopulate: false},
 
     ]).select("-password");
@@ -104,8 +104,8 @@ const assignBeehiveToFarm = async (req, res) => {
     if (!beehive) {
       return res.status(404).json({message: 'Beehive not found'});
     }
-    console.log(beekeeper.hives)
-    const hasAccess = beekeeper.hives.some(hive => hive.equals(beehiveId));
+    console.log(beekeeper.beehive)
+    const hasAccess = beekeeper.beehive.some(hive => hive.equals(beehiveId));
     if (!hasAccess) {
       return res.status(403).json({message: 'Beekeeper has no access to the beehive'});
     }
@@ -114,7 +114,7 @@ const assignBeehiveToFarm = async (req, res) => {
       return res.status(404).json({message: 'Farm not found'});
     }
 
-    // farm.hives.push(beehive);
+    // farm.beehive.push(beehive);
     // await farm.save();
 
 
@@ -159,8 +159,8 @@ const retreiveHivesByFarm = async (req, res) => {
       return res.status(404).json({message: 'Farm not found'});
     }
     let result = []
-    for (let i = 0; i < farm.hives.length; i++) {
-      const hive = await Beehive.findById(farm.hives[i])
+    for (let i = 0; i < farm.beehive.length; i++) {
+      const hive = await Beehive.findById(farm.beehive[i])
       result.push(hive)
 
     }

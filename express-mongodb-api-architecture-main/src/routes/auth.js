@@ -11,8 +11,7 @@ const verifyRole = require('../middlewares/verify-role');
 const { fileUpload } = require('../middlewares/multer');
 
 // controllers
-const authController = require('../controllers/AuthController');
-const beekeeperController = require("../controllers/beekeeper_controller");
+const authController = require('../controllers/auth_controller');
 
 /* -------------------------------------------------------------------------- */
 /*                                 Auth Route                                 */
@@ -52,10 +51,23 @@ router.get('/admin', verifyToken,verifyRole(['beekeeper']), (req, res) => {
 });
 
 // Protected route for bookkeepers
-router.get('/bookkeeper',verifyToken, verifyRole(['beekeeper']), (req, res) => {
+router.get('/beekeeper',verifyToken, verifyRole(['beekeeper']), (req, res) => {
   res.send('Welcome, beekkeeper!');
 });
 router.get('/users/me', verifyToken, authController.getCurrentUser);
+
+
+
+
+
+
+
+// POST request - Create beekeeper account as a super admin
+router.post('/auth/create-beekeeper',verifyToken,verifyRole(['super admin']), authController.createBeekeeperAccount);
+
+
+
+
 
 // PUT request - Update user by id
 router.put(
@@ -70,7 +82,5 @@ router.get('/users', verifyToken, authController.getAllUsers);
 
 // DELETE request - delete user
 router.delete('/users/:id', verifyToken, authController.deleteUser);
-
-
 
 module.exports = router;

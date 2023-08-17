@@ -1,20 +1,19 @@
 const mongoose = require('mongoose');
-const bcrypt = require("bcrypt-nodejs");
 
-const beekeeper = new mongoose.Schema({
-  username: String,
-  email: String,
-  password: String, // Hashed password
-  forgetPasswordToken: String,
-  hives: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Beehive' }],
+const beekeeperSchema = new mongoose.Schema({
+  email: { type: String, unique: true, required: true },
+  password: { type: String, required: true },
+  firstName: String,
+  lastName: String,
+  role: { type: String, enum: ['super admin', 'beekeeper'], default: 'beekeeper' },
+  Beehives: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Beehive' }],
+  forgotPasswordToken: String,
   farms: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Farm' }],
-  subowners: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Subowner' }] // References to Subowner documents
+  subowners: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Subowner' }]
 });
 
-
-
-
-const Beekeeper = mongoose.model('Beekeeper', beekeeper);
-
+const Beekeeper = mongoose.model('Beekeeper', beekeeperSchema);
 
 module.exports = Beekeeper;
+
+
