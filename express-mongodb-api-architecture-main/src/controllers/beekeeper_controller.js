@@ -151,22 +151,17 @@ const retreiveSubownersByBeekeeper = async (req, res) => {
 
 const retreiveHivesByFarm = async (req, res) => {
   try {
-    const {farmId} = req.params.farmid;
+    const { farmId } = req.params;
 
-
-    const farm = await Farm.findById(farmId);
+    const farm = await Farm.findById(farmId).populate('beehive');
+    
     if (!farm) {
-      return res.status(404).json({message: 'Farm not found'});
+      return res.status(404).json({ message: 'Farm not found' });
     }
-    let result = []
-    for (let i = 0; i < farm.beehive.length; i++) {
-      const hive = await Beehive.findById(farm.beehive[i])
-      result.push(hive)
 
-    }
-    res.status(201).json(result);
+    res.status(201).json(farm.beehive);
   } catch (error) {
-    res.status(500).json({message: error.message});
+    res.status(500).json({ message: error.message });
   }
 }
 
