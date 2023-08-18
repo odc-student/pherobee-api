@@ -153,13 +153,13 @@ const retreiveHivesByFarm = async (req, res) => {
   try {
     const { farmId } = req.params;
 
-    const farm = await Farm.findById(farmId).populate('beehive');
+    const farm = await Farm.findById(farmId).populate('beehives');
     
     if (!farm) {
       return res.status(404).json({ message: 'Farm not found' });
     }
 
-    res.status(201).json(farm.beehive);
+    res.status(201).json(farm.beehives);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
