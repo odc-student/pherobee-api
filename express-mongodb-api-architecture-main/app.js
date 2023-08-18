@@ -57,7 +57,7 @@ const hivelogRoutes = require('./src/routes/hive_log');
 // local APIs
 app.use('/v1/api', userRoutes);
 app.use('/v1/api', beekeeperRoutes);
-app.use('/V1/api', hivelogRoutes);
+app.use('/v1/api', hivelogRoutes);
 
 
 // API for uploads file (photo, galleries)
