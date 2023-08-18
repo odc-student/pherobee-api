@@ -8,12 +8,12 @@ const async = require('async');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 // Models
-const User = require('../models/UserModel');
-const Beekeeper = require('../models/Beekeeper'); 
-const Beehive = require('../models/Beehive');
+const User = require('../models/user');
+const Beekeeper = require('../models/beekeeper');
+const Beehive = require('../models/beehive');
 
 const verifyToken = require('../middlewares/verify-token');
-const verifyRole = require('../middlewares/verify-role'); 
+const verifyRole = require('../middlewares/verify-role');
 
 // Token
 const jwt = require('jsonwebtoken');
@@ -49,9 +49,9 @@ var smtpTransport = nodemailer.createTransport({
     pass: AUTH_PASSWORD,
   },
   tls:{
-    rejectUnauthorized:false, // disable certificate vercation 
+    rejectUnauthorized:false, // disable certificate vercation
   }
-  
+
 });
 
 /* -------------------------------------------------------------------------- */
@@ -101,7 +101,6 @@ const checkExistEmail = async (req, res) => {
  * @param {Object} req - The request object
  * @param {Object} res - The response object
  */
-
 const signIn = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -550,7 +549,7 @@ const createBeekeeperAccount = async (req, res) => {
       loginLink,
       password
     );
-    
+
     const data = {
       from: process.env.SENDER_EMAIL,
       to: email,
@@ -631,8 +630,7 @@ const createBeehive = async (req, res) => {
 };
 
 const generateUniqueSerialNumber = () => {
-  const serialNumber = generateRandomSerialNumber(); 
-  return serialNumber;
+  return generateRandomSerialNumber();
 };
 
 const generateRandomSerialNumber = () => {
@@ -661,7 +659,7 @@ module.exports = {
   enableAccount,
   getAllUsers,
   deleteUser,
-  createBeekeeperAccount, 
+  createBeekeeperAccount,
  assignBeehiveToBeekeeper ,
  createBeehive,
 };

@@ -6,10 +6,14 @@ const beekeeperSchema = new mongoose.Schema({
   firstName: String,
   lastName: String,
   role: { type: String, enum: ['super admin', 'beekeeper'], default: 'beekeeper' },
-  Beehive: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Beehive' }],
+  Beehives: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Beehive' }],
   forgotPasswordToken: String,
+  farms: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Farm' }],
+  subowners: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Subowner' }]
 });
 
 const Beekeeper = mongoose.model('Beekeeper', beekeeperSchema);
 
 module.exports = Beekeeper;
+
+

@@ -51,13 +51,13 @@ app.use(cors());
 
 // Require APIs
 const userRoutes = require('./src/routes/auth');
-const BeekeeperRoutes = require('./src/routes/Beekeeper');
-const Behivelog=require('./src/routes/HiveLog')
+const beekeeperRoutes = require('./src/routes/beekeeper');
+const hivelogRoutes = require('./src/routes/hive_log');
 
 // local APIs
 app.use('/v1/api', userRoutes);
-app.use('/V1/api', BeekeeperRoutes);
-app.use('/V1/api', Behivelog);
+app.use('/v1/api', beekeeperRoutes);
+app.use('/v1/api', hivelogRoutes);
 
 
 // API for uploads file (photo, galleries)

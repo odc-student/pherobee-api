@@ -5,17 +5,13 @@
 const router = require('express').Router();
 
 // Middlewares
-const verifyToken = require('../middlewares/verify-role');
-const verifyRole = require('../middlewares/verify-role'); 
+const verifyToken = require('../middlewares/verify-token');
+const verifyRole = require('../middlewares/verify-role');
 
 const { fileUpload } = require('../middlewares/multer');
 
 // controllers
-const authController = require('../controllers/AuthController');
-// Models 
-const Beehive = require('../models/Beehive');
-const Beekeeper = require('../models/Beekeeper');
-
+const authController = require('../controllers/auth_controller');
 
 /* -------------------------------------------------------------------------- */
 /*                                 Auth Route                                 */
@@ -58,7 +54,6 @@ router.get('/admin', verifyToken,verifyRole(['beekeeper']), (req, res) => {
 router.get('/beekeeper',verifyToken, verifyRole(['beekeeper']), (req, res) => {
   res.send('Welcome, beekkeeper!');
 });
-
 router.get('/users/me', verifyToken, authController.getCurrentUser);
 
 

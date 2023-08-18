@@ -22,3 +22,5 @@ const hiveLogSchema = new Schema({
 });
 
 module.exports = mongoose.model('HiveLog', hiveLogSchema);
+
+

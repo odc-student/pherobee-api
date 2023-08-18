@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { Schema } = mongoose;
+const {Schema} = mongoose;
 
 const beehiveSchema = new Schema({
   status: {
@@ -13,6 +13,7 @@ const beehiveSchema = new Schema({
     // Remove the unique constraint
     // unique: true,
   },
+  hiveLog: [{type: mongoose.Schema.Types.ObjectId, ref: 'HiveLog'}],
   beekeeper: {
     type: Schema.Types.ObjectId,
     ref: 'Beekeeper',
