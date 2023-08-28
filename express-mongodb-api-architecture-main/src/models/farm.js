@@ -1,9 +1,9 @@
 const mongoose = require('mongoose');
 
 const farm = new mongoose.Schema({
-  name:String,
+  name: String,
   location: String,
-  beehives: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Hive' }]
+  beehives: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Beehive' }]
 });
 
 const Farm = mongoose.model('Farm', farm);

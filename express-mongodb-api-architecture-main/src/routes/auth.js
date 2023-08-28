@@ -46,14 +46,14 @@ router.post('/account/:token/enable', authController.enableAccount);
 
 // GET request - Get current user
 
-router.get('/admin', verifyToken,verifyRole(['beekeeper']), (req, res) => {
+router.get('/admin', verifyToken, verifyRole(['beekeeper']), (req, res) => {
   res.send('Welcome, super admin!');
 });
 
 // Protected route for bookkeepers
-router.get('/beekeeper',verifyToken, verifyRole(['beekeeper']), (req, res) => {
-  res.send('Welcome, beekkeeper!');
-});
+// router.get('/beekeeper', verifyToken, verifyRole(['beekeeper']), (req, res) => {
+//   res.send('Welcome, beekkeeper!');
+// });
 router.get('/users/me', verifyToken, authController.getCurrentUser);
 
 
@@ -63,7 +63,7 @@ router.get('/users/me', verifyToken, authController.getCurrentUser);
 
 
 // POST request - Create beekeeper account as a super admin
-router.post('/auth/create-beekeeper',verifyToken,verifyRole(['super admin']), authController.createBeekeeperAccount);
+router.post('/auth/create-beekeeper', authController.createBeekeeperAccount);
 
 
 

@@ -5,7 +5,7 @@
     "scripts": {
         "test": "z",
         "start": "NODE_ENV=production && node index.js",
-        "develop": "SET NODE_ENV=development&& nodemon index.js",
+        "develop": "export NODE_ENV=development&& nodemon index.js",
         "create-super-admin": "node SuperAdmin.js",
 
         "lint:check": "eslint --ext \"**/*.{js,jsx,ts,tsx}\"",

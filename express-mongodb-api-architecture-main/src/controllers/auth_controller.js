@@ -48,8 +48,8 @@ var smtpTransport = nodemailer.createTransport({
     user: FROM_EMAIL,
     pass: AUTH_PASSWORD,
   },
-  tls:{
-    rejectUnauthorized:false, // disable certificate vercation
+  tls: {
+    rejectUnauthorized: false, // disable certificate vercation
   }
 
 });
@@ -107,14 +107,14 @@ const signIn = async (req, res) => {
     console.log('Login request received:', email);
 
     // Check if the email exists in the User model
-    const foundUser = await User.findOne({ email });
+    const foundAdmin = await User.findOne({ email });
 
     // If not found in User model, check the Beekeeper model
-    if (!foundUser) {
+    if (!foundAdmin) {
       const foundBeekeeper = await Beekeeper.findOne({ email });
 
       if (!foundBeekeeper) {
-        console.log('User not found:', email);
+        console.log('this user is not found:', email);
         return res.status(403).json({
           success: false,
           message: "Échec de l'authentification, utilisateur introuvable",
@@ -127,25 +127,25 @@ const signIn = async (req, res) => {
         const token = jwt.sign({ _id: foundBeekeeper._id, role: foundBeekeeper.role }, process.env.SECRET, {
           expiresIn: '1w',
         });
-
+        const { password, ...payload } = foundBeekeeper._doc
         return res.json({
           success: true,
           token: token,
-          user: foundBeekeeper,
+          beekeeper: payload,
         });
       }
     } else {
-      const isPasswordMatch = bcrypt.compareSync(password, foundUser.password);
+      const isPasswordMatch = bcrypt.compareSync(password, foundAdmin.password);
 
       if (isPasswordMatch) {
-        const token = jwt.sign({ _id: foundUser._id, role: foundUser.role }, process.env.SECRET, {
+        const token = jwt.sign({ _id: foundAdmin._id, role: foundAdmin.role }, process.env.SECRET, {
           expiresIn: '1w',
         });
 
         return res.json({
           success: true,
           token: token,
-          user: foundUser,
+          user: foundAdmin,
         });
       }
     }
@@ -526,7 +526,7 @@ const enableAccount = async (req, res) => {
 
 const createBeekeeperAccount = async (req, res) => {
   try {
-    const {firstName, lastName, email, password } = req.body;
+    const { firstName, lastName, email, password } = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
     const loginLink = `${process.env.API_ENDPOINT}/v1/api/auth/login`;
 
@@ -660,8 +660,8 @@ module.exports = {
   getAllUsers,
   deleteUser,
   createBeekeeperAccount,
- assignBeehiveToBeekeeper ,
- createBeehive,
+  assignBeehiveToBeekeeper,
+  createBeehive,
 };
 
 
