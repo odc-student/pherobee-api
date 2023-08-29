@@ -2,7 +2,7 @@
 /*                                Dependencies                                */
 /* -------------------------------------------------------------------------- */
 // Packages
-const { default: mongoose } = require('mongoose');
+const {default: mongoose} = require('mongoose');
 const nodemailer = require('nodemailer');
 const async = require('async');
 const crypto = require('crypto');
@@ -21,11 +21,10 @@ const fs = require('fs');
 
 // Email Template
 const {
-  singUpConfirmationEmailTemplate,
-  forgotPasswordEmailTemplate,
-  resetPasswordConfirmationEmailTemplate,
+  singUpConfirmationEmailTemplate, forgotPasswordEmailTemplate, resetPasswordConfirmationEmailTemplate,
 } = require('../template/userAccountEmailTemplates');
-const { captureRejectionSymbol } = require('events');
+const {captureRejectionSymbol} = require('events');
+const {createApiResponse} = require("../utils/api_response");
 
 
 /* -------------------------------------------------------------------------- */
@@ -34,21 +33,13 @@ const { captureRejectionSymbol } = require('events');
 const FROM_EMAIL = process.env.MAILER_EMAIL_ID;
 const AUTH_PASSWORD = process.env.MAILER_PASSWORD;
 
-const API_ENDPOINT =
-  process.env.NODE_ENV === 'production'
-    ? process.env.API_ENDPOINT
-    : process.env.API_ENDPOINT;
+const API_ENDPOINT = process.env.NODE_ENV === 'production' ? process.env.API_ENDPOINT : process.env.API_ENDPOINT;
 
 var smtpTransport = nodemailer.createTransport({
-  host: process.env.HOST,
-  port: process.env.PORT_SSL,
-  secure: false, // true for 465, false for other ports
-  service: process.env.MAILER_SERVICE_PROVIDER,
-  auth: {
-    user: FROM_EMAIL,
-    pass: AUTH_PASSWORD,
-  },
-  tls: {
+  host: process.env.HOST, port: process.env.PORT_SSL, secure: false, // true for 465, false for other ports
+  service: process.env.MAILER_SERVICE_PROVIDER, auth: {
+    user: FROM_EMAIL, pass: AUTH_PASSWORD,
+  }, tls: {
     rejectUnauthorized: false, // disable certificate vercation
   }
 
@@ -75,7 +66,7 @@ const comparePasswords = (password, hash) => {
 };
 
 const checkExistEmail = async (req, res) => {
-  let foundUser = await User.findOne({ email: req.body.email });
+  let foundUser = await User.findOne({email: req.body.email});
   // if email doesn't exist
   if (!foundUser) {
     res.status(200).json({
@@ -83,8 +74,7 @@ const checkExistEmail = async (req, res) => {
     });
   } else {
     res.status(403).json({
-      success: false,
-      message: 'Email existe déjà',
+      success: false, message: 'Email existe déjà',
     });
   }
 };
@@ -103,71 +93,55 @@ const checkExistEmail = async (req, res) => {
  */
 const signIn = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const {email, password} = req.body;
     console.log('Login request received:', email);
 
     // Check if the email exists in the User model
-    const foundAdmin = await User.findOne({ email });
+    const foundAdmin = await User.findOne({email});
 
     // If not found in User model, check the Beekeeper model
     if (!foundAdmin) {
-      const foundBeekeeper = await Beekeeper.findOne({ email });
+      const foundBeekeeper = await Beekeeper.findOne({email});
 
       if (!foundBeekeeper) {
         console.log('this user is not found:', email);
-        return res.status(403).json({
-          success: false,
-          message: "Échec de l'authentification, utilisateur introuvable",
-        });
+        return res.status(403).json(createApiResponse({message: "Échec de l'authentification, utilisateur introuvable"}, 403, "Échec de l'authentification, utilisateur introuvable", false));
       }
 
       const isPasswordMatch = bcrypt.compareSync(password, foundBeekeeper.password);
 
       if (isPasswordMatch) {
-        const token = jwt.sign({ _id: foundBeekeeper._id, role: foundBeekeeper.role }, process.env.SECRET, {
+        const token = jwt.sign({_id: foundBeekeeper._id, role: foundBeekeeper.role}, process.env.SECRET, {
           expiresIn: '1w',
         });
-        const { password, ...payload } = foundBeekeeper._doc
-        return res.json({
-          success: true,
-          token: token,
-          beekeeper: payload,
-        });
+        const {password, ...payload} = foundBeekeeper._doc
+        return res.json(createApiResponse({token: token, beekeeper: payload,}));
       }
     } else {
       const isPasswordMatch = bcrypt.compareSync(password, foundAdmin.password);
 
       if (isPasswordMatch) {
-        const token = jwt.sign({ _id: foundAdmin._id, role: foundAdmin.role }, process.env.SECRET, {
+        const token = jwt.sign({_id: foundAdmin._id, role: foundAdmin.role}, process.env.SECRET, {
           expiresIn: '1w',
         });
 
-        return res.json({
-          success: true,
-          token: token,
-          user: foundAdmin,
-        });
+        return res.json(createApiResponse({
+          token: token, user: foundAdmin,
+        }));
       }
     }
 
     // Incorrect password or no matching user
     console.log('Incorrect password or user not found:', email);
-    return res.status(403).json({
-      success: false,
+    return res.status(403).json(createApiResponse({
       message: "Échec de l'authentification, Mot de passe erroné ou utilisateur introuvable",
-    });
+    }, 403, "Échec de l'authentification, Mot de passe erroné ou utilisateur introuvable", false));
   } catch (error) {
-    console.error('Error during login:', error);
-    return res.status(500).json({
-      success: false,
-      message: "Erreur interne du serveur. Veuillez réessayer ultérieurement.",
-    });
+    return res.status(500).json(createApiResponse({
+      success: false, message: "Erreur interne du serveur. Veuillez réessayer ultérieurement.",
+    }, 500, "Erreur interne du serveur. Veuillez réessayer ultérieurement.", false));
   }
 };
-
-
-
-
 
 
 /**
@@ -176,71 +150,50 @@ const signIn = async (req, res) => {
  * @param {Object} res - The response object
  */
 const forgotPassword = function (req, res) {
-  async.waterfall(
-    [
-      function (done) {
-        User.findOne({
-          email: req.body.email,
-        }).exec(function (err, user) {
-          if (user) {
-            done(err, user);
-          } else {
-            done('User not found.');
-          }
-        });
-      },
-      function (user, done) {
-        // create the random token
-        crypto.randomBytes(20, function (err, buffer) {
-          var token = buffer.toString('hex');
-          done(err, user, token);
-        });
-      },
+  async.waterfall([function (done) {
+    User.findOne({
+      email: req.body.email,
+    }).exec(function (err, user) {
+      if (user) {
+        done(err, user);
+      } else {
+        done('User not found.');
+      }
+    });
+  }, function (user, done) {
+    // create the random token
+    crypto.randomBytes(20, function (err, buffer) {
+      var token = buffer.toString('hex');
+      done(err, user, token);
+    });
+  },
 
-      function (user, token, done) {
-        User.findByIdAndUpdate(
-          { _id: user._id },
-          {
-            resetPasswordToken: token,
-            resetPasswordExpires: Date.now() + 3600000, // token expire in 1h
-          },
-          { new: true },
-        ).exec(function (err, new_user) {
-          done(err, token, new_user);
-        });
-      },
-      function (token, user, done) {
-        // email template
-        const template = forgotPasswordEmailTemplate(
-          user.fullName,
-          user.email,
-          API_ENDPOINT,
-          token,
-        );
-        // config data for emailing
-        var data = {
-          from: FROM_EMAIL,
-          to: user.email,
-          subject: 'Reinitialisation de votre mot de passe',
-          html: template,
-        };
-        // send email
-        smtpTransport.sendMail(data, function (err) {
-          if (!err) {
-            return res.json({
-              message:
-                "Veuillez vérifier votre e-mail pour plus d'instructions",
-            });
-          } else {
-            return done(err);
-          }
-        });
-      },
-    ],
-    function (err) {
-      return res.status(422).json({ message: err });
-    },
-  );
+    function (user, token, done) {
+      User.findByIdAndUpdate({_id: user._id}, {
+        resetPasswordToken: token, resetPasswordExpires: Date.now() + 3600000, // token expire in 1h
+      }, {new: true},).exec(function (err, new_user) {
+        done(err, token, new_user);
+      });
+    }, function (token, user, done) {
+      // email template
+      const template = forgotPasswordEmailTemplate(user.fullName, user.email, API_ENDPOINT, token,);
+      // config data for emailing
+      var data = {
+        from: FROM_EMAIL, to: user.email, subject: 'Reinitialisation de votre mot de passe', html: template,
+      };
+      // send email
+      smtpTransport.sendMail(data, function (err) {
+        if (!err) {
+          return res.json({
+            message: "Veuillez vérifier votre e-mail pour plus d'instructions",
+          });
+        } else {
+          return done(err);
+        }
+      });
+    },], function (err) {
+    return res.status(422).json({message: err});
+  },);
 };
 
 /**
@@ -248,8 +201,7 @@ const forgotPassword = function (req, res) {
  */
 const resetPassword = function (req, res) {
   User.findOne({
-    resetPasswordToken: req.params.token,
-    resetPasswordExpires: { $gt: Date.now() },
+    resetPasswordToken: req.params.token, resetPasswordExpires: {$gt: Date.now()},
   }).exec(function (err, user) {
     if (!err && user) {
       // Verify if we got the same password
@@ -264,9 +216,7 @@ const resetPassword = function (req, res) {
             message: err,
           });
         } else {
-          const template = resetPasswordConfirmationEmailTemplate(
-            user.fullName,
-          );
+          const template = resetPasswordConfirmationEmailTemplate(user.fullName,);
           var data = {
             to: user.email,
             from: FROM_EMAIL,
@@ -276,7 +226,7 @@ const resetPassword = function (req, res) {
 
           smtpTransport.sendMail(data, function (err) {
             if (!err) {
-              return res.json({ message: 'Réinitialisation du mot de passe' });
+              return res.json({message: 'Réinitialisation du mot de passe'});
             } else {
               return res.status(500).json({
                 message: err.message,
@@ -308,18 +258,16 @@ const resetPassword = function (req, res) {
  */
 const getCurrentUser = async (req, res) => {
   try {
-    let foundUser = await User.findOne({ _id: req.decoded._id }).exec();
+    let foundUser = await User.findOne({_id: req.decoded._id}).exec();
 
     if (foundUser) {
       res.status(200).json({
-        success: true,
-        user: foundUser,
+        success: true, user: foundUser,
       });
     }
   } catch (error) {
     res.status(500).json({
-      success: false,
-      message: error.message,
+      success: false, message: error.message,
     });
   }
 };
@@ -331,7 +279,7 @@ const getCurrentUser = async (req, res) => {
  */
 const updateUserById = async (req, res) => {
   try {
-    let foundUser = await User.findOne({ _id: req.params.id });
+    let foundUser = await User.findOne({_id: req.params.id});
 
     const updateImages = {};
 
@@ -350,48 +298,29 @@ const updateUserById = async (req, res) => {
       }
     }
 
-    let updatedUser = await User.findOneAndUpdate(
-      { _id: req.params.id },
-      {
-        $set: {
-          ...updateImages,
-          email: req.body.email ? req.body.email : foundUser.email,
-          fullName: req.body.fullName ? req.body.fullName : foundUser.fullName,
-          governorate: req.body.governorate
-            ? req.body.governorate
-            : foundUser.governorate,
-          municipality: req.body.municipality
-            ? req.body.municipality
-            : foundUser.municipality,
-          phoneNumber: req.body.phoneNumber
-            ? req.body.phoneNumber
-            : foundUser.phoneNumber,
-          is_active: req.body.is_active
-            ? req.body.is_active
-            : foundUser.is_active,
-          is_admin: req.body.is_admin ? req.body.is_admin : foundUser.is_admin,
-          is_manager: req.body.is_manager
-            ? req.body.is_manager
-            : foundUser.is_manager,
-          age: req.body.age ? req.body.age : foundUser.age,
-          gender: req.body.gender ? req.body.gender : foundUser.gender,
-          dateOfBirth: req.body.dateOfBirth
-            ? req.body.dateOfBirth
-            : foundUser.dateOfBirth,
-        },
+    let updatedUser = await User.findOneAndUpdate({_id: req.params.id}, {
+      $set: {
+        ...updateImages,
+        email: req.body.email ? req.body.email : foundUser.email,
+        fullName: req.body.fullName ? req.body.fullName : foundUser.fullName,
+        governorate: req.body.governorate ? req.body.governorate : foundUser.governorate,
+        municipality: req.body.municipality ? req.body.municipality : foundUser.municipality,
+        phoneNumber: req.body.phoneNumber ? req.body.phoneNumber : foundUser.phoneNumber,
+        is_active: req.body.is_active ? req.body.is_active : foundUser.is_active,
+        is_admin: req.body.is_admin ? req.body.is_admin : foundUser.is_admin,
+        is_manager: req.body.is_manager ? req.body.is_manager : foundUser.is_manager,
+        age: req.body.age ? req.body.age : foundUser.age,
+        gender: req.body.gender ? req.body.gender : foundUser.gender,
+        dateOfBirth: req.body.dateOfBirth ? req.body.dateOfBirth : foundUser.dateOfBirth,
       },
-      { new: true, upsert: true },
-    );
+    }, {new: true, upsert: true},);
 
     res.status(200).json({
-      success: true,
-      message: "Mise à jour réussie de l'utilisateur",
-      updatedUser: updatedUser,
+      success: true, message: "Mise à jour réussie de l'utilisateur", updatedUser: updatedUser,
     });
   } catch (error) {
     res.status(500).json({
-      success: false,
-      message: error.message,
+      success: false, message: error.message,
     });
   }
 };
@@ -407,14 +336,12 @@ const getAllUsers = async (req, res) => {
 
     if (foundUser) {
       res.status(200).json({
-        success: true,
-        user: foundUser,
+        success: true, user: foundUser,
       });
     }
   } catch (error) {
     res.status(500).json({
-      success: false,
-      message: error.message,
+      success: false, message: error.message,
     });
   }
 };
@@ -427,23 +354,21 @@ const getAllUsers = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     // Delete user image
-    let imageToDelete = await User.findOne({ _id: req.params.id });
+    let imageToDelete = await User.findOne({_id: req.params.id});
     if (imageToDelete.photo !== '') {
       fs.unlinkSync(`${imageToDelete.photo}`);
     }
     // Delete user object
-    let deletedUser = await User.findOneAndDelete({ _id: req.params.id });
+    let deletedUser = await User.findOneAndDelete({_id: req.params.id});
 
     if (deletedUser) {
       res.status(200).json({
-        status: true,
-        message: "L'utilisateur a été supprimée avec succès",
+        status: true, message: "L'utilisateur a été supprimée avec succès",
       });
     }
   } catch (error) {
     res.status(500).json({
-      success: false,
-      message: error.message,
+      success: false, message: error.message,
     });
   }
 };
@@ -459,15 +384,13 @@ const deleteUser = async (req, res) => {
  */
 const disableAccount = async (req, res) => {
   try {
-    await User.findOneAndUpdate({ _id: req.params.id }, { is_active: false });
+    await User.findOneAndUpdate({_id: req.params.id}, {is_active: false});
     res.json({
-      success: true,
-      message: 'Votre compte a été désactivé',
+      success: true, message: 'Votre compte a été désactivé',
     });
   } catch (error) {
     res.status(500).json({
-      success: false,
-      message: error.message,
+      success: false, message: error.message,
     });
   }
 };
@@ -479,12 +402,11 @@ const disableAccount = async (req, res) => {
  */
 const enableAccount = async (req, res) => {
   try {
-    let foundUser = await User.findOne({ confirmationCode: req.params.token }); // to check for email
+    let foundUser = await User.findOne({confirmationCode: req.params.token}); // to check for email
     // if confirmationCode doesn't exist
     if (!foundUser) {
       res.status(403).json({
-        success: false,
-        message: "Échec de l'authentification, utilisateur introuvable",
+        success: false, message: "Échec de l'authentification, utilisateur introuvable",
       });
     } else {
       let token = jwt.sign(foundUser.toJSON(), process.env.SECRET, {
@@ -492,93 +414,71 @@ const enableAccount = async (req, res) => {
       });
       if (foundUser.is_active === true) {
         res.json({
-          success: true,
-          token: token,
-          user: foundUser,
-          message: 'votre compte déjà activé',
+          success: true, token: token, user: foundUser, message: 'votre compte déjà activé',
         });
       } else {
         try {
-          await User.findOneAndUpdate(
-            { _id: mongoose.Types.ObjectId(foundUser._id) },
-            { is_active: true, confirmationCode: undefined },
-          );
+          await User.findOneAndUpdate({_id: mongoose.Types.ObjectId(foundUser._id)}, {
+            is_active: true, confirmationCode: undefined
+          },);
           res.status(200).json({
-            success: true,
-            token: token,
-            message: 'Votre compte a été activé avec succès',
+            success: true, token: token, message: 'Votre compte a été activé avec succès',
           });
         } catch (error) {
           res.status(500).json({
-            success: false,
-            message: error.message,
+            success: false, message: error.message,
           });
         }
       }
     }
   } catch (error) {
     res.status(500).json({
-      success: false,
-      message: error.message,
+      success: false, message: error.message,
     });
   }
 };
 
 const createBeekeeperAccount = async (req, res) => {
   try {
-    const { firstName, lastName, email, password } = req.body;
+    const {firstName, lastName, email, password} = req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
     const loginLink = `${process.env.API_ENDPOINT}/v1/api/auth/login`;
 
     const beekeeper = new Beekeeper({
-      firstName,
-      lastName,
-      email,
-      password: hashedPassword,
-      role: 'beekeeper',
-      forgotPasswordToken: '',
+      firstName, lastName, email, password: hashedPassword, role: 'beekeeper', forgotPasswordToken: '',
     });
 
     await beekeeper.save();
 
     // Send email with credentials
-    const template = singUpConfirmationEmailTemplate(
-      firstName,
-      lastName,
-      email,
-      loginLink,
-      password
-    );
+    const template = singUpConfirmationEmailTemplate(firstName, lastName, email, loginLink, password);
 
     const data = {
-      from: process.env.SENDER_EMAIL,
-      to: email,
-      subject: 'Beekeeper Account Created',
-      html: template,
+      from: process.env.SENDER_EMAIL, to: email, subject: 'Beekeeper Account Created', html: template,
     };
 
     smtpTransport.sendMail(data, function (err) {
       if (!err) {
-        res.status(201).json({ message: 'Beekeeper account created successfully.' });
+        res.status(201).json({message: 'Beekeeper account created successfully.'});
       } else {
         console.error('Error sending email:', err);
-        res.status(500).json({ error: 'An error occurred while creating the beekeeper account.' });
+        res.status(500).json({error: 'An error occurred while creating the beekeeper account.'});
       }
     });
   } catch (error) {
     console.error('Error creating beekeeper account:', error);
-    res.status(500).json({ error: 'An error occurred while creating the beekeeper account.' });
+    res.status(500).json({error: 'An error occurred while creating the beekeeper account.'});
   }
 };
 
 const assignBeehiveToBeekeeper = async (req, res) => {
   try {
-    const { beehiveId, beekeeperId } = req.body;
+    const {beehiveId, beekeeperId} = req.body;
 
     // Verify role ('super admin')
     if (!req.decoded || req.decoded.role !== 'super admin') {
       console.log('Access denied. Insufficient privileges for role:', req.decoded.role);
-      return res.status(403).json({ message: 'Access denied. Insufficient privileges.' });
+      return res.status(403).json({message: 'Access denied. Insufficient privileges.'});
     }
 
     // Find the Beehive and Beekeeper
@@ -587,28 +487,28 @@ const assignBeehiveToBeekeeper = async (req, res) => {
 
     if (!beehive || !beekeeper) {
       console.log('Beehive:', beehive, 'Beekeeper:', beekeeper);
-      return res.status(404).json({ message: 'Beehive or Beekeeper not found.' });
+      return res.status(404).json({message: 'Beehive or Beekeeper not found.'});
     }
 
     // Update Beehive with Beekeeper assignment
     beehive.beekeeper = beekeeperId;
     await beehive.save();
 
-    res.status(200).json({ message: 'Beehive assigned to Beekeeper successfully.' });
+    res.status(200).json({message: 'Beehive assigned to Beekeeper successfully.'});
   } catch (error) {
     console.error('Error assigning beehive to beekeeper:', error);
-    res.status(500).json({ message: 'An error occurred while assigning beehive to beekeeper.' });
+    res.status(500).json({message: 'An error occurred while assigning beehive to beekeeper.'});
   }
 };
 
 
 const createBeehive = async (req, res) => {
   try {
-    const { status } = req.body;
+    const {status} = req.body;
 
     if (req.decoded.role !== 'super admin') {
       console.log('Access denied. Insufficient privileges for role:', req.decoded.role);
-      return res.status(403).json({ message: 'Access denied. Insufficient privileges.' });
+      return res.status(403).json({message: 'Access denied. Insufficient privileges.'});
     }
 
     // Generate a unique serial number
@@ -616,16 +516,15 @@ const createBeehive = async (req, res) => {
 
     // Create a new Beehive
     const newBeehive = new Beehive({
-      status,
-      serialNumber,
+      status, serialNumber,
     });
 
     await newBeehive.save();
 
-    return res.status(201).json({ message: 'Beehive created successfully.', beehive: newBeehive });
+    return res.status(201).json({message: 'Beehive created successfully.', beehive: newBeehive});
   } catch (error) {
     console.error('Error creating beehive:', error);
-    return res.status(500).json({ message: 'An error occurred while creating beehive.' });
+    return res.status(500).json({message: 'An error occurred while creating beehive.'});
   }
 };
 
@@ -637,15 +536,6 @@ const generateRandomSerialNumber = () => {
   const randomDigits = Math.floor(Math.random() * 1000000);
   return `BH${randomDigits}`;
 };
-
-
-
-
-
-
-
-
-
 
 
 module.exports = {
