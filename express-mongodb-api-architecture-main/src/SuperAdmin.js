@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const dotenv=require('dotenv') ;
 dotenv.config();
+
 mongoose.connect(process.env.DEV_DATABASE, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -9,20 +10,19 @@ mongoose.connect(process.env.DEV_DATABASE, {
 
 async function createSuperAdmin() {
   const connection = mongoose.connection;
-
   try {
-    const superAdminExists = await connection.collection('users').findOne({ role: 'super admin' });
+    const superAdminExists = await connection.collection('admins').findOne({ role: 'admin' });
 
     if (!superAdminExists) {
       const superAdminData = {
         email: process.env.ADMIN_EMAIL,
-        password: await bcrypt.hash( process.env.ADMIN_PASSSWORD, 10),
+        password: await bcrypt.hash( process.env.ADMIN_PASSWORD, 10),
         firstName: 'Super',
         lastName: 'Admin',
-        role: 'super admin',
+        role: 'admin',
       };
 
-      const result = await connection.collection('users').insertOne(superAdminData);
+      const result = await connection.collection('admins').insertOne(superAdminData);
       console.log('Super admin account created:', result.insertedId);
     } else {
       console.log('Super admin already exists.');

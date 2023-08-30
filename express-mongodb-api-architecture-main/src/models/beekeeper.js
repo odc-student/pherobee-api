@@ -7,7 +7,7 @@ const beekeeperSchema = new mongoose.Schema({
   lastName: String,
   role: {
     type: String,
-    enum: ['super admin', 'beekeeper'],
+    enum: ['admin', 'beekeeper' ,'subowner'],
     default: 'beekeeper',
   },
   beehives: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Beehive' }],

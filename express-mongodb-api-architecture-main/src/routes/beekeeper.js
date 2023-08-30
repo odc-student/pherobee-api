@@ -31,6 +31,7 @@ router.post(
 
 router.get("/beekeepers",verifyToken,verifyRole(["super admin"]),beekeeperController.getBeeKeepers)
 router.get("/beekeeper",verifyToken,verifyRole(["beekeeper"]),beekeeperController.getBeeKeepersById)
+router.get("/subowner",verifyToken,verifyRole(["subowner"]),beekeeperController.getSubownerById)
 router.get("/beekeepers/:beekeeperid/subowners",beekeeperController.retrieveSubownersByBeekeeper)
 router.get("/beekeepers/:farmid/beehive",verifyToken,verifyRole(["beekeeper"]),beekeeperController.retrieveHivesByFarm)
 router.post("/beekeepers/create/subowner",verifyToken,verifyRole(["beekeeper"]),beekeeperController.addSubowner)

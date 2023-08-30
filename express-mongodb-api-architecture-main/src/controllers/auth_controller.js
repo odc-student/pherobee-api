@@ -8,9 +8,10 @@ const async = require('async');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 // Models
-const User = require('../models/user');
+const Admin = require('../models/user');
 const Beekeeper = require('../models/beekeeper');
 const Beehive = require('../models/beehive');
+const Subowner = require('../models/subowner');
 
 const verifyToken = require('../middlewares/verify-token');
 const verifyRole = require('../middlewares/verify-role');
@@ -66,7 +67,7 @@ const comparePasswords = (password, hash) => {
 };
 
 const checkExistEmail = async (req, res) => {
-  let foundUser = await User.findOne({email: req.body.email});
+  let foundUser = await Admin.findOne({email: req.body.email});
   // if email doesn't exist
   if (!foundUser) {
     res.status(200).json({
@@ -96,17 +97,30 @@ const signIn = async (req, res) => {
     const {email, password} = req.body;
     console.log('Login request received:', email);
 
-    // Check if the email exists in the User model
-    const foundAdmin = await User.findOne({email});
-
-    // If not found in User model, check the Beekeeper model
+    const foundAdmin = await Admin.findOne({email});
     if (!foundAdmin) {
+
       const foundBeekeeper = await Beekeeper.findOne({email});
 
       if (!foundBeekeeper) {
-        console.log('this user is not found:', email);
-        return res.status(403).json(createApiResponse({message: "Échec de l'authentification, utilisateur introuvable"}, 403, "Échec de l'authentification, utilisateur introuvable", false));
+        const foundSubowner = await Subowner.findOne({email});
+
+        if (!foundSubowner) {
+          console.log('this user is not found:', email);
+          return res.status(403).json(createApiResponse({message: "Échec de l'authentification, utilisateur introuvable"}, 403, "Échec de l'authentification, utilisateur introuvable", false));
+        }
+        console.log( foundSubowner)
+        const isPasswordMatch = bcrypt.compareSync(password, foundSubowner.password);
+        if (isPasswordMatch) {
+          const token = jwt.sign({_id: foundSubowner._id, role: foundSubowner.role}, process.env.SECRET, {
+            expiresIn: '1w',
+          });
+          const {password, ...payload} = foundSubowner._doc
+          return res.json(createApiResponse({token: token, role:"subowner",}));
+        }
+
       }
+      else{
 
       const isPasswordMatch = bcrypt.compareSync(password, foundBeekeeper.password);
 
@@ -115,9 +129,10 @@ const signIn = async (req, res) => {
           expiresIn: '1w',
         });
         const {password, ...payload} = foundBeekeeper._doc
-        return res.json(createApiResponse({token: token, beekeeper: payload,}));
-      }
-    } else {
+        return res.json(createApiResponse({token: token, role:"beekeeper",}));
+      }}
+    } else
+    {
       const isPasswordMatch = bcrypt.compareSync(password, foundAdmin.password);
 
       if (isPasswordMatch) {
@@ -126,7 +141,7 @@ const signIn = async (req, res) => {
         });
 
         return res.json(createApiResponse({
-          token: token, user: foundAdmin,
+          token: token, role: "admin",
         }));
       }
     }
@@ -138,8 +153,8 @@ const signIn = async (req, res) => {
     }, 403, "Échec de l'authentification, Mot de passe erroné ou utilisateur introuvable", false));
   } catch (error) {
     return res.status(500).json(createApiResponse({
-      success: false, message: "Erreur interne du serveur. Veuillez réessayer ultérieurement.",
-    }, 500, "Erreur interne du serveur. Veuillez réessayer ultérieurement.", false));
+      success: false, message: error.message,
+    }, 500, error.message, false));
   }
 };
 
@@ -151,7 +166,7 @@ const signIn = async (req, res) => {
  */
 const forgotPassword = function (req, res) {
   async.waterfall([function (done) {
-    User.findOne({
+    Admin.findOne({
       email: req.body.email,
     }).exec(function (err, user) {
       if (user) {
@@ -169,7 +184,7 @@ const forgotPassword = function (req, res) {
   },
 
     function (user, token, done) {
-      User.findByIdAndUpdate({_id: user._id}, {
+      Admin.findByIdAndUpdate({_id: user._id}, {
         resetPasswordToken: token, resetPasswordExpires: Date.now() + 3600000, // token expire in 1h
       }, {new: true},).exec(function (err, new_user) {
         done(err, token, new_user);
@@ -200,7 +215,7 @@ const forgotPassword = function (req, res) {
  * Reset password
  */
 const resetPassword = function (req, res) {
-  User.findOne({
+  Admin.findOne({
     resetPasswordToken: req.params.token, resetPasswordExpires: {$gt: Date.now()},
   }).exec(function (err, user) {
     if (!err && user) {
@@ -258,7 +273,7 @@ const resetPassword = function (req, res) {
  */
 const getCurrentUser = async (req, res) => {
   try {
-    let foundUser = await User.findOne({_id: req.decoded._id}).exec();
+    let foundUser = await Admin.findOne({_id: req.decoded._id}).exec();
 
     if (foundUser) {
       res.status(200).json({
@@ -279,7 +294,7 @@ const getCurrentUser = async (req, res) => {
  */
 const updateUserById = async (req, res) => {
   try {
-    let foundUser = await User.findOne({_id: req.params.id});
+    let foundUser = await Admin.findOne({_id: req.params.id});
 
     const updateImages = {};
 
@@ -298,7 +313,7 @@ const updateUserById = async (req, res) => {
       }
     }
 
-    let updatedUser = await User.findOneAndUpdate({_id: req.params.id}, {
+    let updatedUser = await Admin.findOneAndUpdate({_id: req.params.id}, {
       $set: {
         ...updateImages,
         email: req.body.email ? req.body.email : foundUser.email,
@@ -332,7 +347,7 @@ const updateUserById = async (req, res) => {
  */
 const getAllUsers = async (req, res) => {
   try {
-    let foundUser = await User.find().exec();
+    let foundUser = await Admin.find().exec();
 
     if (foundUser) {
       res.status(200).json({
@@ -354,12 +369,12 @@ const getAllUsers = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     // Delete user image
-    let imageToDelete = await User.findOne({_id: req.params.id});
+    let imageToDelete = await Admin.findOne({_id: req.params.id});
     if (imageToDelete.photo !== '') {
       fs.unlinkSync(`${imageToDelete.photo}`);
     }
     // Delete user object
-    let deletedUser = await User.findOneAndDelete({_id: req.params.id});
+    let deletedUser = await Admin.findOneAndDelete({_id: req.params.id});
 
     if (deletedUser) {
       res.status(200).json({
@@ -384,7 +399,7 @@ const deleteUser = async (req, res) => {
  */
 const disableAccount = async (req, res) => {
   try {
-    await User.findOneAndUpdate({_id: req.params.id}, {is_active: false});
+    await Admin.findOneAndUpdate({_id: req.params.id}, {is_active: false});
     res.json({
       success: true, message: 'Votre compte a été désactivé',
     });
@@ -402,7 +417,7 @@ const disableAccount = async (req, res) => {
  */
 const enableAccount = async (req, res) => {
   try {
-    let foundUser = await User.findOne({confirmationCode: req.params.token}); // to check for email
+    let foundUser = await Admin.findOne({confirmationCode: req.params.token}); // to check for email
     // if confirmationCode doesn't exist
     if (!foundUser) {
       res.status(403).json({
@@ -418,7 +433,7 @@ const enableAccount = async (req, res) => {
         });
       } else {
         try {
-          await User.findOneAndUpdate({_id: mongoose.Types.ObjectId(foundUser._id)}, {
+          await Admin.findOneAndUpdate({_id: mongoose.Types.ObjectId(foundUser._id)}, {
             is_active: true, confirmationCode: undefined
           },);
           res.status(200).json({

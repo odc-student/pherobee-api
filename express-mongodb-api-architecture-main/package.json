@@ -6,8 +6,7 @@
         "test": "z",
         "start": "NODE_ENV=production && node index.js",
         "develop": "export NODE_ENV=development&& nodemon index.js",
-        "create-super-admin": "node SuperAdmin.js",
-
+        "create-super-admin": "node src/SuperAdmin.js",
         "lint:check": "eslint --ext \"**/*.{js,jsx,ts,tsx}\"",
         "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx}\"",
         "lint:fix": "eslint --ext \"**/*.{js,jsx,ts,tsx}\" --fix",
