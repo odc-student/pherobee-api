@@ -8,11 +8,25 @@ const dotenv = require('dotenv');
 const morgan = require('morgan');
 const bodyParser = require('body-parser');
 var cors = require('cors');
+const { initializeApp } = require("firebase-admin/app");
 const path = require('path');
 const mongoose = require('mongoose');
+
+dotenv.config();
+
 // Firebase
 require('firebase/auth');
 require('firebase/firestore');
+var admin = require("firebase-admin");
+
+var serviceAccount = require(process.env.SERVICE_ACCOUNT_PATH);
+
+initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
+
+// process.setMaxListeners(0);
+
 
 // Swagger
 const swaggerUi = require('swagger-ui-express');
@@ -53,11 +67,13 @@ app.use(cors());
 const userRoutes = require('./src/routes/auth');
 const beekeeperRoutes = require('./src/routes/beekeeper');
 const hivelogRoutes = require('./src/routes/hive_log');
+const notifRoutes = require('./src/routes/notif');
 
 // local APIs
 app.use('/v1/api', userRoutes);
 app.use('/v1/api', beekeeperRoutes);
 app.use('/v1/api', hivelogRoutes);
+app.use('/v1/api', notifRoutes);
 
 
 // API for uploads file (photo, galleries)

@@ -60,7 +60,7 @@ const addSubowner = async (req, res) => {
         // Create a new Subowner document
 
         const subowner = new Subowner({
-            email, password: hash_pass,
+            email, password: hash_pass,beekeeper
 
         });
         await subowner.save();
@@ -160,9 +160,10 @@ const getBeeKeepersById = async (req, res) => {
     const beekeeperId = req.decoded._id
     const beekeeper = await Beekeeper.findById(beekeeperId).populate([{
         path: "subowners", strictPopulate: false, select: "-password"
-    }, {path: "beehives", populate: {path: "hiveLog"}}, {path: "farms"},
+    }, {path: "beehives", populate: {path: "hiveLog" }}, {path: "farms"},
 
     ]).select("-password");
+
     if (!beekeeper) {
         return res.status(404).json(createApiResponse({message: 'Beekeeper not found'}, 404, 'Beekeeper not found', false));
     }

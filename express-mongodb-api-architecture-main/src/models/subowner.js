@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-
 const subowner = new mongoose.Schema({
   username: String,
   email: String,
@@ -8,6 +7,10 @@ const subowner = new mongoose.Schema({
     type: String,
     enum: ['admin', 'beekeeper','subowner'],
     default: 'subowner',
+  },
+  beekeeper: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Beekeeper',
   },
   farmAccess: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Farm' }] // References to Hives subowner can access
 });

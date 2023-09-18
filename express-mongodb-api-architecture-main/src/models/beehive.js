@@ -10,8 +10,7 @@ const beehiveSchema = new Schema({
   serialNumber: {
     type: String,
     required: true,
-    // Remove the unique constraint
-    // unique: true,
+    unique: true,
   },
   hiveLog: [{type: mongoose.Schema.Types.ObjectId, ref: 'HiveLog'}],
   beekeeper: {

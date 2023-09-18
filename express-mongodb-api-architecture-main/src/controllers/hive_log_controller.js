@@ -32,17 +32,14 @@ const createHiveLog = async (req, res) => {
 
 const getHiveLogsByBeehive = async (req, res) => {
   try {
-    const { beehiveId } = req.params;
+    // const { beehiveId } = req.params;
+    //
+    // if (!mongoose.Types.ObjectId.isValid(beehiveId)) {
+    //   return res.status(400).json({ message: 'Invalid beehiveId format.' });
+    // }
 
-    if (!mongoose.Types.ObjectId.isValid(beehiveId)) {
-      return res.status(400).json({ message: 'Invalid beehiveId format.' });
-    }
+    const hiveLogs = await HiveLog.find();
 
-    const hiveLogs = await HiveLog.find({ beehive: beehiveId }).sort('-timestamp').exec();
-
-    if (!hiveLogs || hiveLogs.length === 0) {
-      return res.status(404).json({ message: 'No hive logs found for the specified beehiveId.' });
-    }
 
     return res.status(200).json({ hiveLogs });
   } catch (error) {
