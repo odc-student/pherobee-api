@@ -24,6 +24,9 @@ router.post('/auth/user-email', authController.checkExistEmail);
 // POST request - sign in
 router.post('/auth/login', authController.signIn);
 
+router.post('/auth/forget-password', authController.forgotPassword);
+router.patch('/auth/change-password',verifyToken, verifyRole(['beekeeper','subowner']), authController.changePassword);
+
 // POST request - Send password reset link
 router.post('/auth/forget-password', authController.forgotPassword);
 

@@ -95,6 +95,7 @@ const checkExistEmail = async (req, res) => {
 const signIn = async (req, res) => {
   try {
     const {email, password} = req.body;
+    // console.log({email, password})
     console.log('Login request received:', email);
 
     const foundAdmin = await Admin.findOne({email});
@@ -157,110 +158,167 @@ const signIn = async (req, res) => {
     }, 500, error.message, false));
   }
 };
-
+const calculateExpiryDate = function() {
+  const now = new Date();
+  return new Date(now.getTime() + (15 * 60 * 1000)); // 15 mn expiry (adjust as needed)
+}
 
 /**
  * Send Email to reset password
  * @param {Object} req - The request object
  * @param {Object} res - The response object
  */
+
 const forgotPassword = function (req, res) {
-  async.waterfall([function (done) {
-    Admin.findOne({
-      email: req.body.email,
-    }).exec(function (err, user) {
-      if (user) {
-        done(err, user);
-      } else {
-        done('User not found.');
-      }
-    });
-  }, function (user, done) {
-    // create the random token
-    crypto.randomBytes(20, function (err, buffer) {
-      var token = buffer.toString('hex');
-      done(err, user, token);
-    });
-  },
+  async.waterfall(
+    [
+      function (done) {
+        Beekeeper.findOne({
+          email: req.body.email,
+        }, function (err, beekeeper) {
+          if (err) {
+            return done(err);
+          }
+          if (!beekeeper) {
+            return done('Beekeeper not found.');
+          }
+          done(null, beekeeper);
+        });
+      },
+      function (beekeeper, done) {
+        crypto.randomBytes(20, function (err, buffer) {
+          if (err) {
+            return done(err);
+          }
+          var token = buffer.toString('hex');
+          done(null, beekeeper, token);
+        });
+      },
+      function (beekeeper, token, done) {
+        const expiryDate = calculateExpiryDate(); // Calculate expiry date
 
-    function (user, token, done) {
-      Admin.findByIdAndUpdate({_id: user._id}, {
-        resetPasswordToken: token, resetPasswordExpires: Date.now() + 3600000, // token expire in 1h
-      }, {new: true},).exec(function (err, new_user) {
-        done(err, token, new_user);
-      });
-    }, function (token, user, done) {
-      // email template
-      const template = forgotPasswordEmailTemplate(user.fullName, user.email, API_ENDPOINT, token,);
-      // config data for emailing
-      var data = {
-        from: FROM_EMAIL, to: user.email, subject: 'Reinitialisation de votre mot de passe', html: template,
-      };
-      // send email
-      smtpTransport.sendMail(data, function (err) {
-        if (!err) {
+        Beekeeper.findByIdAndUpdate(
+          { _id: beekeeper._id },
+          {
+            forgotPasswordToken: token,
+            resetPasswordExpires: expiryDate, // Store expiry date in database
+          },
+          { new: true },
+          function (err, new_beekeeper) {
+            if (err) {
+              return done(err);
+            }
+            console.log('Token and expiry date saved in database:', token, expiryDate);
+            done(null, token, new_beekeeper);
+          }
+        );
+      },
+      function (token, beekeeper, done) {
+        const template = forgotPasswordEmailTemplate(
+          beekeeper.firstName +
+          " " + beekeeper.lastName,
+          beekeeper.email,
+          API_ENDPOINT,
+          token
+        );
+
+        var data = {
+          from: FROM_EMAIL,
+          to: beekeeper.email,
+          subject: 'Reset Your Password',
+          html: template,
+        };
+
+        console.log(`Sending email to: ${beekeeper.email}`);
+        smtpTransport.sendMail(data, function (err) {
+          if (err) {
+            console.error(err);
+            return done(err);
+          }
+          console.log(`Email sent successfully`);
           return res.json({
-            message: "Veuillez vérifier votre e-mail pour plus d'instructions",
+            message: "Please check your email for further instructions",
           });
-        } else {
-          return done(err);
-        }
-      });
-    },], function (err) {
-    return res.status(422).json({message: err});
-  },);
-};
+        });
 
+      },
+    ],
+    function (err) {
+      return res.status(422).json({ message: err });
+    }
+  );
+};
 /**
  * Reset password
  */
 const resetPassword = function (req, res) {
-  Admin.findOne({
-    resetPasswordToken: req.params.token, resetPasswordExpires: {$gt: Date.now()},
-  }).exec(function (err, user) {
-    if (!err && user) {
-      // Verify if we got the same password
-      if (req.body.newPassword === req.body.verifyPassword) {
-        user.password = req.body.newPassword;
-        user.resetPasswordToken = undefined;
-        user.resetPasswordExpires = undefined;
-        user.save();
+  const token = req.params.token;
+  console.log(`Token from URL: ${token}`);
 
-        if (err) {
-          return res.status(422).send({
-            message: err,
-          });
-        } else {
-          const template = resetPasswordConfirmationEmailTemplate(user.fullName,);
-          var data = {
-            to: user.email,
-            from: FROM_EMAIL,
-            subject: 'Confirmation de réinitialisation du mot de passe',
-            html: template,
-          };
+  const newPassword = req.body.newPassword;
+  const verifyPassword = req.body.verifyPassword;
 
-          smtpTransport.sendMail(data, function (err) {
-            if (!err) {
-              return res.json({message: 'Réinitialisation du mot de passe'});
-            } else {
-              return res.status(500).json({
-                message: err.message,
-              });
-            }
-          });
-        }
-      } else {
-        return res.status(422).send({
-          message: 'Passwords do not match',
-        });
-      }
-    } else {
+  if (newPassword !== verifyPassword) {
+    return res.status(422).send({
+      message: 'Passwords do not match',
+    });
+  }
+
+  Beekeeper.findOne({
+    forgotPasswordToken: token,
+    resetPasswordExpires: { $gt: Date.now() },
+  }).exec(async function (err, beekeeper) {
+    if (err) {
+      console.log('Error finding beekeeper:', err);
+      return res.status(500).send({
+        message: 'Internal Server Error',
+      });
+    }
+
+    if (!beekeeper) {
+      console.log('Beekeeper not found for token:', token);
       return res.status(400).send({
         message: 'Password reset token is invalid or has expired.',
       });
     }
+
+
+    beekeeper.password = await bcrypt.hash(newPassword, 10);
+
+    beekeeper.forgotPasswordToken = undefined;
+    beekeeper.resetPasswordExpires = undefined;
+
+    beekeeper.save(function (err) {
+      if (err) {
+        console.log('Error saving beekeeper:', err);
+        return res.status(500).send({
+          message: 'Internal Server Error',
+        });
+      }
+
+      const template = resetPasswordConfirmationEmailTemplate(beekeeper.firstName, beekeeper.lastName, beekeeper.email, newPassword);
+      const data = {
+        to: beekeeper.email,
+        from: FROM_EMAIL,
+        subject: 'Confirmation de réinitialisation du mot de passe',
+        html: template,
+      };
+
+      smtpTransport.sendMail(data, function (err) {
+        if (!err) {
+          console.log('Email sent successfully');
+          return res.json({message: 'Réinitialisation du mot de passe'});
+        } else {
+          console.log('Error sending email:', err);
+          return res.status(500).json({
+            message: err.message,
+          });
+        }
+      });
+    });
   });
 };
+
 
 /* -------------------------------------------------------------------------- */
 /*                               User Controller                              */
@@ -552,10 +610,44 @@ const generateRandomSerialNumber = () => {
   return `BH${randomDigits}`;
 };
 
+const changePassword = async (req, res) => {
+  try {
+    const beekeeperId = req.decoded._id
+    const { currentPassword, newPassword } = req.body;
+    console.log(beekeeperId)
+    // Get the current user
+    const user = await Beekeeper.findById( beekeeperId );
+
+    // Validate the current password
+    const isPasswordMatch = await bcrypt.compare(currentPassword, user.password);
+    if (!isPasswordMatch) {
+      return res.status(403).json({
+        message: "Incorrect current password",
+      });
+    }
+
+    // Hash the new password
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+
+    // Update the user's password
+    await Beekeeper.updateOne({ _id: user._id }, { password: newPasswordHash });
+
+    // Return a success response
+    return res.json(createApiResponse({
+      message: "Password changed successfully",
+    }, 200, "Password changed successfully" , true));
+  } catch (error) {
+    return res.status(500).json(createApiResponse(error, 500, "Error when getting beekeepers " + error.message, false));
+  }
+};
+
+
+
 
 module.exports = {
   checkExistEmail,
   signIn,
+  changePassword,
   forgotPassword,
   resetPassword,
   getCurrentUser,
@@ -567,6 +659,7 @@ module.exports = {
   createBeekeeperAccount,
   assignBeehiveToBeekeeper,
   createBeehive,
+
 };
 
 
