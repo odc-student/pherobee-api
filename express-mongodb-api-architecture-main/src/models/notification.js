@@ -31,6 +31,10 @@ const notificationSchema = new Schema({
     enum: ['high_temp', 'low_temp', 'movement', 'hornet' , 'mite', 'no_queen', 'new_queen' , "default"],
     default: "default",
   },
+  createdDate: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 module.exports = mongoose.model('Notification', notificationSchema);

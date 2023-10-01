@@ -9,11 +9,15 @@ const mongoose = require('mongoose');
 /*                                 User Schema                                */
 /* -------------------------------------------------------------------------- */
 const AdminSchema = new mongoose.Schema({
-    email: {type: String, unique: true, required: true},
-    password: {type: String, required: true},
-    firstName: String,
-    lastName: String,
-    role: {type: String, enum: ['admin', 'beekeeper', 'subowner'], default: 'admin'}
+  email: {type: String, unique: true, required: true},
+  password: {type: String, required: true},
+  firstName: String,
+  lastName: String,
+  role: {type: String, enum: ['admin', 'beekeeper', 'subowner'], default: 'admin'},
+  createdDate: {
+    type: Date,
+    default: Date.now,
+  },
 
 });
 

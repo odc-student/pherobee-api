@@ -79,24 +79,20 @@ const assignBeehiveToFarm = async (req, res) => {
     try {
         const beekeeperId = req.decoded._id;
         const {beehiveId, farmId} = req.body;
-
         // Update the Beekeeper's subowners array
         const beekeeper = await Beekeeper.findById(beekeeperId);
         const farm = await Farm.findById(farmId);
         const beehive = await Beehive.findById(beehiveId);
-
         if (!beekeeper) {
             return res.status(404).json(createApiResponse({message: 'Beekeeper not found'}, 404, 'Beekeeper not found', false));
         }
         if (!beehive) {
             return res.status(404).json(createApiResponse({message: 'Beehive not found'}, 404, 'Beehive not found', false));
         }
-
         const hasAccess = beekeeper.beehives.some(hive => hive.equals(beehiveId));
         if (!hasAccess) {
             return res.status(403).json(createApiResponse({message: 'Beekeeper has no access to the beehive'}, 403, 'Beekeeper has no access to the beehive', false));
         }
-
         if (!farm) {
             return res.status(404).json(createApiResponse({message: 'Farm not found'}, 404, 'Farm not found', false));
         }
@@ -200,6 +196,7 @@ const assignBeehiveToBeekeeper = async (req, res) => {
     }
 
     beekeeper.beehives.push(beehive)
+    beekeeper.defaultFarm.push(beehive)
     await beekeeper.save()
     beehive.beekeeper = beekeeper
     await beehive.save()

@@ -17,6 +17,10 @@ const beehiveSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'Beekeeper',
   },
+  createdDate: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 

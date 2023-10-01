@@ -12,7 +12,11 @@ const subowner = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Beekeeper',
   },
-  farmAccess: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Farm' }] // References to Hives subowner can access
+  farmAccess: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Farm' }], // References to Hives subowner can access
+  createdDate: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 const Subowner = mongoose.model('Subowner', subowner);

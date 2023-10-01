@@ -14,6 +14,10 @@ const beekeeperSchema = new mongoose.Schema({
   forgotPasswordToken: String,
   farms: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Farm' }],
   subowners: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Subowner' }],
+  createdDate: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
 const Beekeeper = mongoose.model('Beekeeper', beekeeperSchema);
