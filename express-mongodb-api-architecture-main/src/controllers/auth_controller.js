@@ -12,6 +12,7 @@ const Admin = require('../models/user');
 const Beekeeper = require('../models/beekeeper');
 const Beehive = require('../models/beehive');
 const Subowner = require('../models/subowner');
+const Farm = require('../models/farm');
 
 const verifyToken = require('../middlewares/verify-token');
 const verifyRole = require('../middlewares/verify-role');
@@ -520,6 +521,16 @@ const createBeekeeperAccount = async (req, res) => {
     const beekeeper = new Beekeeper({
       firstName, lastName, email, password: hashedPassword, role: 'beekeeper', forgotPasswordToken: '',
     });
+    const defaultFarm = new Farm({
+      name:"Default Farm",
+      beekeeper,
+      deletable:false,
+    })
+    beekeeper.farms.push(defaultFarm);
+    await beekeeper.save();
+    // Save the subowner document
+    await defaultFarm.save();
+
 
     await beekeeper.save();
 

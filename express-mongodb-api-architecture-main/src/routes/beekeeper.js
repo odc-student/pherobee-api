@@ -44,6 +44,7 @@ router.post("/beekeepers/associate/beehive_to_farm",verifyToken,verifyRole(["bee
 router.delete("/beekeepers/delete/beehive_from_farm",verifyToken,verifyRole(["beekeeper"]),beekeeperController.removeBeehiveFromFarm)
 router.post("/beekeepers/associate/beehive_to_beekeeper",verifyToken,verifyRole(["admin"]),beekeeperController.assignBeehiveToBeekeeper)
 router.post("/beekeepers/associate/farm_to_subowner",verifyToken,verifyRole(["beekeeper"]),beekeeperController.assignFarmToSubowner)
+router.post("/beekeepers/create/create_subowner/assign/farm_to_subowner",verifyToken,verifyRole(["beekeeper"]),beekeeperController.createSubownerAndAssignFarm)
 router.delete("/beekeepers/delete/farm_from_subowner",verifyToken,verifyRole(["beekeeper"]),beekeeperController.removeFarmFromSubowner)
 // router.delete("/beekeepers/associate/beehive_to_beekeeper",verifyToken,verifyRole(["admin"]),beekeeperController.deleteBeehiveFromBeekeeper)
 

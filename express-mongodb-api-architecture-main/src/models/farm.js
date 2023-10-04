@@ -12,6 +12,11 @@ const farm = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Beekeeper',
   },
+  deletable: {
+    type: Boolean,
+    default: true,
+  },
+
 });
 
 const Farm = mongoose.model('Farm', farm);

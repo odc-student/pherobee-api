@@ -1,7 +1,11 @@
 const mongoose = require('mongoose');
 const subowner = new mongoose.Schema({
   username: String,
-  email: String,
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+  },
   password: String, // Hashed password
   role: {
     type: String,
