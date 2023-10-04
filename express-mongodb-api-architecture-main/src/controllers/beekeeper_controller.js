@@ -23,10 +23,10 @@ const getBeeKeepers = async (req, res) => {
 const createFarm = async (req, res) => {
   try {
     const beekeeperId = req.decoded._id
-    const {name, location} = req.body;
+    const {name, location,long,lat} = req.body;
     // Create a new Subowner document
     const farm = new Farm({
-      name, location,
+      name, location,long,lat
     });
 
     // Update the Beekeeper's subowners array
