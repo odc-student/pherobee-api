@@ -18,7 +18,7 @@ const sendNotif = async (req, res) => {
   } else {
     const notification = new Notification(
       {
-        title, body, serialNumber, type
+        title, body, serialNumber, type,createdDate:Date.now(),seen:false
       }
     )
     await notification.save();
@@ -64,7 +64,46 @@ const getNotifications = async (req, res) => {
 }
 
 
+const setSeen = async (req, res) => {
+
+  const userId = req.decoded._id
+  const {notificationId} = req.body
+  let serialNumbers;
+  if (req.decoded.role === 'beekeeper') {
+    const beekeeper = await Beekeeper.findById(userId);
+    if (!beekeeper) {
+      return res.status(404).json(createApiResponse({message: 'Beekeeper not found'}, 404, 'Beekeeper not found', false));
+    }
+    // const notifications
+    const beehives = await Beehive.find({beekeeper})
+  } else if (req.decoded.role === 'subowner') {
+    const subowner = await Subowner.findById(userId).populate({
+      path: "farmAccess",
+      populate: {path: "beehives", select: "serialNumber"}
+    });
+    if (!subowner) {
+      return res.status(404).json(createApiResponse({message: 'subowner not found'}, 404, 'subowner not found', false));
+    }
+    // const no
+    // const data = subowner.farmAccess.map(f => f.beehives.map(b => b.serialNumber))
+    // serialNumbers = [].concat(...data)
+    // console.log(serialNumbers)
+  }
+  // const notifications = await Notification.find({serial_number: {$in: serialNumbers}})
+  const notification = await Notification.findById(notificationId)
+  if (!notification) {
+    return res.status(404).json(createApiResponse({message: 'notification not found'}, 404, 'notification not found', false));
+  }
+  notification.seen=true;
+  await notification.save();
+
+  return res.status(200).json(createApiResponse(notification))
+
+}
+
+
 module.exports = {
   sendNotif,
-  getNotifications
+  getNotifications,
+  setSeen
 };

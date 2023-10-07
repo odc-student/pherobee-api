@@ -31,7 +31,11 @@ const hiveLogSchema = new Schema({
     type: Number,
     required: true,
   },
-  temperature_c: {
+  temp_ext_c: {
+    type: Number,
+    required: true,
+  },
+  temp_int_c: {
     type: Number,
     required: true,
   },
@@ -51,10 +55,10 @@ const hiveLogSchema = new Schema({
     type: Date,
     default: Date.now,
   },
-  // Motion:{
-  //   type:Boolean,
-  //   default:false
-  // }
+  Motion:{
+    type:Boolean,
+    default:false
+  }
 });
 
 module.exports = mongoose.model('HiveLog', hiveLogSchema,"iot-data");

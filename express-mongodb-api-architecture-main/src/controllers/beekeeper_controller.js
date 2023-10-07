@@ -23,10 +23,10 @@ const getBeeKeepers = async (req, res) => {
 const createFarm = async (req, res) => {
   try {
     const beekeeperId = req.decoded._id
-    const {name, location,long,lat} = req.body;
+    const {name, location, long, lat} = req.body;
     // Create a new Subowner document
     const farm = new Farm({
-      name, location,long,lat
+      name, location, long, lat
     });
 
     // Update the Beekeeper's subowners array
@@ -197,7 +197,7 @@ const assignBeehiveToBeekeeper = async (req, res) => {
   if (!beehive) {
     return res.status(404).json(createApiResponse({message: 'Beehive not found'}, 404, 'Beehive not found', false));
   }
-  const defaultFarm = await Farm.find({beekeeper:beekeeper})
+  const defaultFarm = await Farm.find({beekeeper: beekeeper})
   defaultFarm.beehives.push(beehive)
   await defaultFarm.save()
   beekeeper.beehives.push(beehive)
@@ -308,7 +308,7 @@ const deleteFarm = async (req, res) => {
 const updateFarm = async (req, res) => {
   try {
     const beekeeperId = req.decoded._id;
-    const {name, location, farmId} = req.body;
+    const {name, location, farmId, long, lat} = req.body;
 
     // Find the Beekeeper
     const beekeeper = await Beekeeper.findById(beekeeperId);
@@ -322,7 +322,7 @@ const updateFarm = async (req, res) => {
     }
 
     // Find the farm document and update its properties
-    const updatedFarm = await Farm.findByIdAndUpdate(farmId, {name, location}, {new: true} // This option returns the updated document
+    const updatedFarm = await Farm.findByIdAndUpdate(farmId, {name, location,long,lat}, {new: true} // This option returns the updated document
     );
 
     if (!updatedFarm) {
@@ -465,7 +465,7 @@ const removeFarmFromSubowner = async (req, res) => {
 const createSubownerAndAssignFarm = async (req, res) => {
   try {
     const beekeeperId = req.decoded._id;
-    const {username,email, password, farmId} = req.body;
+    const {username, email, password, farmId} = req.body;
 
     // Update the Beekeeper's subowners array
     const beekeeper = await Beekeeper.findById(beekeeperId);
